@@ -1,26 +1,80 @@
 import { NextResponse } from 'next/server'
 
 const DEFAULT_TEMPLATE = {
+  // Importante: esta estrutura é o "payload" que vai para o POST /api/imovel.
+  // Você pode copiar e colar na IA para ela gerar um JSON bem completo.
+  // O POST aceita payload mínimo, mas quanto mais campos você enviar, melhor o resultado.
   title: '',
-  purpose: 'venda',
-  type: 'casa',
-  city: 'corumba',
+  // Opcional: slug pode ser gerado automaticamente pelo backend
+  slug: '',
+
+  // Enumerados
+  purpose: 'venda', // 'venda' | 'aluguel'
+  type: 'casa', // 'casa' | 'apartamento' | 'terreno' | 'rural' | 'comercial'
+  city: 'corumba', // 'corumba' | 'ladario'
+
+  // Opcional: pode ser derivado; no banco existe citySlug (sem depender do enum)
+  citySlug: '',
   neighborhood: '',
+
+  // Preço (o backend usa inteiro; ex: 380000 = R$ 380.000)
   price: 0,
-  priceSuffix: null,
-  priceNote: null,
+  priceSuffix: null, // '/mês' | 'à vista' | etc
+  priceNote: null, // texto livre (ex: "Aceita financiamento")
+
   shortDescription: '',
   longDescription: '',
+
   bedrooms: null,
   bathrooms: null,
   parkingSpaces: null,
+
+  // Áreas (o backend tem fallback)
   totalArea: 0,
   builtArea: null,
+
+  // Banners/flags
   featured: false,
   specialOpportunity: false,
   tags: [],
-  status: 'disponivel',
-  images: [],
+
+  // Estado do imóvel (controla disponibilidade)
+  status: 'disponivel', // 'disponivel' | 'reservado' | 'vendido' | 'alugado'
+
+  // Opcional: se vazio, o admin tenta derivar de images[0].src;
+  // e o backend também aplica fallback.
+  coverImageUrl: '',
+
+  // Opcional: se vazio, o backend gera uma mensagem padrão com link do imóvel.
+  whatsappMessage: '',
+
+  // Galeria
+  images: [
+    {
+      src: 'https://SEU_BUCKET_URL/properties/temp/SEU_TEMP_ID/image-xxxxx.png',
+      alt: 'Foto 1',
+      width: 1200,
+      height: 800,
+      // Opcional: se não vier, o backend usa o índice.
+      sortOrder: 0,
+    },
+  ],
+
+  // Só para facilitar a IA (não é usado pelo backend)
+  _meta: {
+    requiredForMinimalPost: ['title', 'price', 'city', 'type', 'purpose'],
+    enums: {
+      purpose: ['venda', 'aluguel'],
+      type: ['casa', 'apartamento', 'terreno', 'rural', 'comercial'],
+      city: ['corumba', 'ladario'],
+      status: ['disponivel', 'reservado', 'vendido', 'alugado'],
+    },
+    notes: [
+      'tags deve ser um array de strings (ex: ["financiamento","quintal"]).',
+      'images é opcional no sentido de "aceitar", mas sem imagens o frontend mostra fallback.',
+      'coverImageUrl pode ser omitido; prefira deixar em branco e manter images[0] como primeira imagem.',
+    ],
+  },
 }
 
 const TEMPLATE_JSON = JSON.stringify(DEFAULT_TEMPLATE, null, 2)

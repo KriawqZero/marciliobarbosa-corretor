@@ -519,6 +519,33 @@ export async function POST(req: Request) {
       });
 
       if (updatedProperty) {
+        // Garante que o cover sempre seja a 1ª imagem enviada (ordenada por sortOrder).
+        if (updatedProperty.images && updatedProperty.images.length > 0) {
+          const firstImageSrc = updatedProperty.images[0]?.src;
+          if (firstImageSrc && firstImageSrc !== updatedProperty.coverImageUrl) {
+            await prisma.property.update({
+              where: { id: property.id },
+              data: { coverImageUrl: firstImageSrc },
+            });
+
+            const finalProperty = await prisma.property.findUnique({
+              where: { id: property.id },
+              include: {
+                images: {
+                  orderBy: { sortOrder: "asc" },
+                },
+              },
+            });
+
+            if (finalProperty) {
+              return NextResponse.json(
+                { property: serializeProperty(finalProperty) },
+                { status: 201 }
+              );
+            }
+          }
+        }
+
         return NextResponse.json(
           { property: serializeProperty(updatedProperty) },
           { status: 201 }
