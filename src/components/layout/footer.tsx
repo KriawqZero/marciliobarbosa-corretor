@@ -121,6 +121,17 @@ export function Footer() {
             &copy; {new Date().getFullYear()} {SITE_NAME}. Todos os direitos
             reservados.
           </p>
+          <p className="text-xs text-white/50">
+            Desenvolvido por{' '}
+            <a
+              href="https://marciliortiz.dev.br"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 transition-colors hover:text-white"
+            >
+              Marcilio Ortiz
+            </a>
+          </p>
         </Container>
       </div>
     </footer>
