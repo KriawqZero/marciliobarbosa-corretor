@@ -110,15 +110,15 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
           )}
 
           <div
-            className="relative max-h-[85vh] max-w-[90vw]"
+            className="relative h-[85vh] w-[90vw] max-h-[85vh] max-w-[90vw]"
             onClick={(e) => e.stopPropagation()}
           >
             <Image
               src={activeImage.src}
               alt={activeImage.alt || title}
-              width={activeImage.width}
-              height={activeImage.height}
-              className="max-h-[85vh] w-auto rounded-lg object-contain"
+              fill
+              sizes="(max-width: 768px) 90vw, 90vw"
+              className="rounded-lg object-contain"
             />
           </div>
 
