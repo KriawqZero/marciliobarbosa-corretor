@@ -13,6 +13,7 @@ import { PurposeBadge, StatusBadge, OpportunityBadge } from '@/components/proper
 import { getPropertyBySlug } from '@/data/services/properties'
 import { formatPrice } from '@/lib/format'
 import { SITE_NAME } from '@/lib/constants'
+import { buildMetadata, getAbsoluteUrl } from '@/lib/metadata'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -24,36 +25,48 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!property) return {}
 
   const price = formatPrice(property.price)
-  const title = `${property.title} | ${price}`
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const url = `${siteUrl}/imovel/${property.slug}`
+  const title = `${property.title} em ${property.city} | ${price}`
+  const url = `/imovel/${property.slug}`
+  const socialDescription = `${property.shortDescription} Veja fotos, caracteristicas e fale direto no WhatsApp para mais informacoes.`
+  const imageUrl = property.gallery?.[0]?.src || property.coverImage
+  const shouldIndex = property.status === 'disponivel' || property.status === 'reservado'
 
-  return {
+  return buildMetadata({
+    path: url,
     title,
-    description: property.shortDescription,
+    description: socialDescription,
+    alternates: {
+      canonical: url,
+    },
+    robots: {
+      index: shouldIndex,
+      follow: true,
+      googleBot: {
+        index: shouldIndex,
+        follow: true,
+      },
+    },
     openGraph: {
       title: `${property.title} | ${price} | ${SITE_NAME}`,
-      description: property.shortDescription,
-      url,
-      siteName: SITE_NAME,
-      locale: 'pt_BR',
-      type: 'article',
+      description: socialDescription,
+      url: getAbsoluteUrl(url),
+      type: 'website',
       images: [
         {
-          url: property.coverImage,
-          width: 1200,
-          height: 800,
-          alt: property.title,
+          url: imageUrl,
+          width: property.gallery?.[0]?.width || 1200,
+          height: property.gallery?.[0]?.height || 800,
+          alt: `${property.title} - ${property.neighborhood}, ${property.city}`,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
       title: `${property.title} | ${price}`,
-      description: property.shortDescription,
-      images: [property.coverImage],
+      description: socialDescription,
+      images: [imageUrl],
     },
-  }
+  })
 }
 
 export default async function ImovelPage({ params }: PageProps) {
@@ -62,8 +75,7 @@ export default async function ImovelPage({ params }: PageProps) {
 
   if (!property) notFound()
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const url = `${siteUrl}/imovel/${property.slug}`
+  const url = getAbsoluteUrl(`/imovel/${property.slug}`)
   const price = formatPrice(property.price)
 
   const purposeLabel = property.purpose === 'venda' ? 'Venda' : 'Aluguel'

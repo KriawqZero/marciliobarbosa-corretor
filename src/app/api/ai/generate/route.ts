@@ -71,6 +71,7 @@ export async function POST(req: Request) {
       );
     }
 
+    //console.log('req', await req.json());
     const body = (await req.json()) as AIGeneratePayload;
     const notes = body?.notes?.trim();
     if (!notes) {
@@ -135,7 +136,7 @@ export async function POST(req: Request) {
         },
       ],
     });
-
+    
     const rawContent = response.choices[0]?.message?.content ?? '{}';
     const parsed = safeJsonParse(rawContent) as
       | {
@@ -185,6 +186,7 @@ export async function POST(req: Request) {
       priceNote,
     });
   } catch (error) {
+    console.error('Erro ao gerar conteudo com IA.', error);
     return NextResponse.json(
       {
         error: 'Erro ao gerar conteudo com IA.',

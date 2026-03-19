@@ -12,6 +12,8 @@ import { CATEGORIES } from '@/lib/constants'
 import { isValidCategory } from '@/lib/utils'
 import type { PropertyFilter, PropertyPurpose, PropertyType } from '@/types'
 import { Pagination } from '@/components/shared/pagination'
+import { buildMetadata, LISTINGS_SOCIAL_IMAGE } from '@/lib/metadata'
+import { SITE_NAME } from '@/lib/constants'
 
 interface PageProps {
   params: Promise<{ categoria: string }>
@@ -23,10 +25,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!isValidCategory(categoria)) return {}
 
   const cat = CATEGORIES[categoria]
-  return {
+  return buildMetadata({
+    path: `/imoveis/${categoria}`,
     title: cat.title,
     description: cat.description,
-  }
+    alternates: {
+      canonical: `/imoveis/${categoria}`,
+    },
+    openGraph: {
+      title: `${cat.title} | ${SITE_NAME}`,
+      description: cat.description,
+      images: [
+        {
+          url: LISTINGS_SOCIAL_IMAGE,
+          width: 1200,
+          height: 800,
+          alt: cat.title,
+        },
+      ],
+    },
+    twitter: {
+      title: `${cat.title} | ${SITE_NAME}`,
+      description: cat.description,
+      images: [LISTINGS_SOCIAL_IMAGE],
+    },
+  })
 }
 
 function buildFilterFromParams(

@@ -4,11 +4,35 @@ import { Container } from '@/components/layout/container'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { CTASection } from '@/components/sections/cta-section'
 import { BROKER_NAME, BROKER_CRECI } from '@/lib/constants'
+import { buildMetadata, DEFAULT_SOCIAL_IMAGE } from '@/lib/metadata'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
+  path: '/sobre',
   title: `Sobre ${BROKER_NAME}`,
-  description: `Conheça ${BROKER_NAME}, corretor de imóveis com experiência no mercado de Corumbá-MS e Ladário-MS. Atendimento personalizado e conhecimento da região.`,
-}
+  description: `Conheca ${BROKER_NAME}, corretor de imoveis em Corumba-MS e Ladario-MS. Experiencia local, atendimento personalizado e suporte completo na negociacao.`,
+  alternates: {
+    canonical: '/sobre',
+  },
+  openGraph: {
+    title: `Sobre ${BROKER_NAME} | Corretor de imoveis`,
+    description:
+      'Atendimento imobiliario com foco em Corumba e Ladario, com transparencia, agilidade e conhecimento da regiao.',
+    images: [
+      {
+        url: DEFAULT_SOCIAL_IMAGE,
+        width: 1200,
+        height: 1200,
+        alt: `Foto de ${BROKER_NAME}`,
+      },
+    ],
+  },
+  twitter: {
+    title: `Sobre ${BROKER_NAME} | Corretor de imoveis`,
+    description:
+      'Conheca o corretor e o trabalho imobiliario em Corumba e Ladario.',
+    images: [DEFAULT_SOCIAL_IMAGE],
+  },
+})
 
 export default function SobrePage() {
   return (

@@ -5,14 +5,45 @@ import { SpecialOpportunities } from '@/components/sections/special-opportunitie
 import { CitySection } from '@/components/sections/city-section'
 import { InstitutionalSection } from '@/components/sections/institutional-section'
 import { CTASection } from '@/components/sections/cta-section'
+import { buildMetadata, DEFAULT_SOCIAL_IMAGE } from '@/lib/metadata'
 import {
   BROKER_NAME,
   BROKER_PHONE_DISPLAY,
   BROKER_EMAIL,
+  SITE_NAME,
 } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+export const metadata = buildMetadata({
+  path: '/',
+  title: `${SITE_NAME} — Imoveis em Corumba e Ladario`,
+  description:
+    'Imoveis em Corumba-MS e Ladario-MS com atendimento direto no WhatsApp. Casas, apartamentos, terrenos e oportunidades especiais para compra e aluguel.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: `${SITE_NAME} — Imoveis em Corumba e Ladario`,
+    description:
+      'Confira imoveis selecionados em Corumba e Ladario com atendimento rapido e personalizado.',
+    images: [
+      {
+        url: DEFAULT_SOCIAL_IMAGE,
+        width: 1200,
+        height: 1200,
+        alt: `${BROKER_NAME} - corretor de imoveis em Corumba e Ladario`,
+      },
+    ],
+  },
+  twitter: {
+    title: `${SITE_NAME} — Imoveis em Corumba e Ladario`,
+    description:
+      'Casas, terrenos, apartamentos e oportunidades especiais com atendimento via WhatsApp.',
+    images: [DEFAULT_SOCIAL_IMAGE],
+  },
+})
 
 export default function Home() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'

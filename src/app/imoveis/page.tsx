@@ -9,12 +9,37 @@ import { PropertyGridSkeleton } from '@/components/shared/loading-skeleton'
 import { getPropertiesPaged } from '@/data/services/properties'
 import type { PropertyFilter, PropertyPurpose, PropertyType } from '@/types'
 import { Pagination } from '@/components/shared/pagination'
+import { buildMetadata, LISTINGS_SOCIAL_IMAGE } from '@/lib/metadata'
+import { SITE_NAME } from '@/lib/constants'
 
-export const metadata: Metadata = {
-  title: 'Imóveis em Corumbá e Ladário',
+export const metadata: Metadata = buildMetadata({
+  path: '/imoveis',
+  title: 'Imoveis em Corumba e Ladario',
   description:
-    'Encontre casas, terrenos, apartamentos e imóveis comerciais em Corumbá-MS e Ladário-MS. Venda e aluguel com atendimento personalizado.',
-}
+    'Veja imoveis disponiveis para venda e aluguel em Corumba-MS e Ladario-MS: casas, terrenos, apartamentos, comercial e rural.',
+  alternates: {
+    canonical: '/imoveis',
+  },
+  openGraph: {
+    title: `Imoveis em Corumba e Ladario | ${SITE_NAME}`,
+    description:
+      'Catalogo atualizado com oportunidades imobiliarias e atendimento direto via WhatsApp.',
+    images: [
+      {
+        url: LISTINGS_SOCIAL_IMAGE,
+        width: 1200,
+        height: 800,
+        alt: 'Imoveis em Corumba e Ladario',
+      },
+    ],
+  },
+  twitter: {
+    title: `Imoveis em Corumba e Ladario | ${SITE_NAME}`,
+    description:
+      'Casas, terrenos, apartamentos e mais opcoes para compra e aluguel.',
+    images: [LISTINGS_SOCIAL_IMAGE],
+  },
+})
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
