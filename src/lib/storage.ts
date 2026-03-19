@@ -25,7 +25,7 @@ export async function uploadToMinIO(
   contentType: string = 'application/octet-stream'
 ): Promise<string> {
   if (!bucket || !publicUrl) {
-    throw new Error('MINIO_BUCKET or MINIO_PUBLIC_URL not configured')
+    throw new Error('AWS_S3_BUCKET_NAME or AWS_PUBLIC_URL not configured')
   }
 
   const client = getClient()
@@ -44,7 +44,7 @@ export async function uploadToMinIO(
 
 export async function moveObject(fromPath: string, toPath: string): Promise<string> {
   if (!bucket || !publicUrl) {
-    throw new Error('MINIO_BUCKET or MINIO_PUBLIC_URL not configured')
+    throw new Error('AWS_S3_BUCKET_NAME or AWS_PUBLIC_URL not configured')
   }
 
   const client = getClient()
