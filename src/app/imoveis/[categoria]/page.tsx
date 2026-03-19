@@ -7,10 +7,11 @@ import { PropertyGrid } from '@/components/property/property-grid'
 import { FilterBar } from '@/components/search/filter-bar'
 import { SortSelect } from '@/components/search/sort-select'
 import { PropertyGridSkeleton } from '@/components/shared/loading-skeleton'
-import { getProperties } from '@/data/services/properties'
+import { getPropertiesPaged } from '@/data/services/properties'
 import { CATEGORIES } from '@/lib/constants'
 import { isValidCategory } from '@/lib/utils'
 import type { PropertyFilter, PropertyPurpose, PropertyType } from '@/types'
+import { Pagination } from '@/components/shared/pagination'
 
 interface PageProps {
   params: Promise<{ categoria: string }>
@@ -41,26 +42,40 @@ function buildFilterFromParams(
   return filter
 }
 
-function sortProperties(
-  properties: Awaited<ReturnType<typeof getProperties>>,
-  ordem?: string,
-) {
-  if (ordem === 'preco_asc') return [...properties].sort((a, b) => a.price - b.price)
-  if (ordem === 'preco_desc') return [...properties].sort((a, b) => b.price - a.price)
-  return properties
-}
-
 async function CategoryPropertyList({
   baseFilter,
   searchParams,
+  basePath,
 }: {
   baseFilter: PropertyFilter
   searchParams: Record<string, string | string[] | undefined>
+  basePath: string
 }) {
   const filter = buildFilterFromParams(baseFilter, searchParams)
-  const properties = await getProperties(filter)
-  const sorted = sortProperties(properties, searchParams.ordem as string | undefined)
-  return <PropertyGrid properties={sorted} />
+  const rawPage = searchParams.page
+  const page =
+    typeof rawPage === 'string' && Number.isFinite(Number(rawPage))
+      ? Math.max(1, Math.floor(Number(rawPage)))
+      : 1
+
+  const ordem = Array.isArray(searchParams.ordem) ? searchParams.ordem[0] : searchParams.ordem
+  const order = ordem === 'preco_asc' || ordem === 'preco_desc' ? ordem : undefined
+
+  const paged = await getPropertiesPaged(filter, { page, limit: 12, order })
+
+  return (
+    <>
+      <PropertyGrid properties={paged.items} />
+      <Pagination
+        basePath={basePath}
+        searchParams={searchParams}
+        page={paged.page}
+        pages={paged.pages}
+        hasPrev={paged.hasPrev}
+        hasNext={paged.hasNext}
+      />
+    </>
+  )
 }
 
 export default async function CategoriaPage({ params, searchParams }: PageProps) {
@@ -98,7 +113,11 @@ export default async function CategoriaPage({ params, searchParams }: PageProps)
         </div>
 
         <Suspense fallback={<PropertyGridSkeleton />}>
-          <CategoryPropertyList baseFilter={cat.filter} searchParams={search} />
+          <CategoryPropertyList
+            baseFilter={cat.filter}
+            searchParams={search}
+            basePath={`/imoveis/${categoria}`}
+          />
         </Suspense>
       </Container>
     </section>

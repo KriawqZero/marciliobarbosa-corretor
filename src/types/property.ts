@@ -59,3 +59,15 @@ export interface CategoryMeta {
   description: string
   filter: PropertyFilter
 }
+
+export interface PaginatedResult<T> {
+  items: T[]
+  page: number
+  limit: number
+  total: number
+  pages: number
+  hasPrev: boolean
+  hasNext: boolean
+}
+
+export type PaginatedProperties = PaginatedResult<Property>

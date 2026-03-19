@@ -20,6 +20,8 @@ export function SortSelect() {
     } else {
       params.delete('ordem')
     }
+    // Trocar ordenação deve voltar para a primeira página.
+    params.delete('page')
     const qs = params.toString()
     router.push(`${pathname}${qs ? `?${qs}` : ''}`)
   }

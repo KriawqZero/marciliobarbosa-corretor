@@ -22,29 +22,29 @@ type PropertyImageInput = {
 };
 
 type CreatePropertyInput = {
-  slug: string;
+  slug?: string;
   title: string;
   purpose: (typeof PropertyPurpose)[keyof typeof PropertyPurpose];
   type: (typeof PropertyType)[keyof typeof PropertyType];
   city: (typeof PropertyCity)[keyof typeof PropertyCity];
-  citySlug: string;
-  neighborhood: string;
-  price: number;
+  citySlug?: string;
+  neighborhood?: string;
+  price: number | string;
   priceSuffix?: string | null;
   priceNote?: string | null;
-  shortDescription: string;
-  longDescription: string;
+  shortDescription?: string;
+  longDescription?: string;
   bedrooms?: number | null;
   bathrooms?: number | null;
   parkingSpaces?: number | null;
-  totalArea: number;
+  totalArea?: number | string;
   builtArea?: number | null;
-  coverImageUrl: string;
+  coverImageUrl?: string;
   featured?: boolean;
   specialOpportunity?: boolean;
   tags?: string[];
   status?: (typeof PropertyStatus)[keyof typeof PropertyStatus];
-  whatsappMessage: string;
+  whatsappMessage?: string;
   images?: PropertyImageInput[];
 };
 
@@ -87,6 +87,64 @@ function normalizeImages(images: PropertyImageInput[] | undefined) {
       height: Number(img.height),
       sortOrder: Number.isFinite(img.sortOrder) ? Number(img.sortOrder) : index,
     }));
+}
+
+function slugify(input: string): string {
+  const normalized = input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+  // Troca qualquer sequência de caracteres não alfanuméricos por hífen
+  const slug = normalized
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return slug.length > 0 ? slug : 'imovel'
+}
+
+async function generateUniqueSlug(baseSlug: string): Promise<string> {
+  const attemptBase = baseSlug.trim()
+  let candidate = attemptBase
+
+  for (let i = 2; i < 1000; i++) {
+    const existing = await prisma.property.findUnique({
+      where: { slug: candidate },
+      select: { id: true },
+    })
+    if (!existing) return candidate
+    candidate = `${attemptBase}-${i}`
+  }
+
+  // Fallback: mesmo em cenários extremos, não deixa quebrar a criação.
+  return `${attemptBase}-${Date.now()}`
+}
+
+const DEFAULT_NEIGHBORHOOD = 'A definir'
+const DEFAULT_TOTAL_AREA = 1
+const DEFAULT_COVER_IMAGE_URL =
+  'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&h=800&fit=crop&q=80'
+
+function buildShortDescription({
+  title,
+  city,
+}: {
+  title: string
+  city: string
+}): string {
+  return `${title} em ${city}.`
+}
+
+function buildDefaultWhatsappMessage({
+  title,
+  slug,
+  siteUrl,
+}: {
+  title: string
+  slug: string
+  siteUrl: string
+}): string {
+  const url = `${siteUrl}/imovel/${slug}`
+  return `Olá! Tenho interesse no imóvel "${title}". Podemos conversar? Link: ${url}`
 }
 
 function serializeProperty(property: {
@@ -212,11 +270,14 @@ export async function GET(req: Request) {
     const maxPrice = url.searchParams.get("maxPrice");
     const bedrooms = url.searchParams.get("bedrooms");
     const search = url.searchParams.get("search");
-    const page = Math.max(Number(url.searchParams.get("page") || "1"), 1);
-    const limit = Math.min(
-      Math.max(Number(url.searchParams.get("limit") || "20"), 1),
-      100
-    );
+    const rawPage = Number(url.searchParams.get("page") || "1");
+    const rawLimit = Number(url.searchParams.get("limit") || "20");
+    const page =
+      Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+    const limit =
+      Number.isFinite(rawLimit) && rawLimit > 0
+        ? Math.min(Math.floor(rawLimit), 100)
+        : 20;
 
     const where: Record<string, unknown> = {};
 
@@ -265,11 +326,17 @@ export async function GET(req: Request) {
       }),
     ]);
 
+    const pages = Math.ceil(total / limit);
+    const hasPrev = page > 1;
+    const hasNext = page < pages;
+
     return NextResponse.json({
       total,
       page,
       limit,
-      pages: Math.ceil(total / limit),
+      pages,
+      hasPrev,
+      hasNext,
       properties: properties.map(serializeProperty),
     });
   } catch (error) {
@@ -290,74 +357,113 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data: CreatePropertyInput = await req.json();
+    const data = await req.json();
+
+    // Campos mínimos para permitir cadastro em lote.
+    // Mantemos compatibilidade: se o cliente enviar outros campos, eles também serão usados.
+    const title = typeof data?.title === 'string' ? data.title.trim() : '';
+    const purpose = data?.purpose;
+    const type = data?.type;
+    const city = data?.city;
+    const priceNumber = Number(data?.price);
 
     if (
-      !isNonEmptyString(data.slug) ||
-      !isNonEmptyString(data.title) ||
-      !isValidEnumValue(PropertyPurpose, data.purpose) ||
-      !isValidEnumValue(PropertyType, data.type) ||
-      !isValidEnumValue(PropertyCity, data.city) ||
-      !isNonEmptyString(data.citySlug) ||
-      !isNonEmptyString(data.neighborhood) ||
-      !Number.isFinite(data.price) ||
-      !isNonEmptyString(data.shortDescription) ||
-      !isNonEmptyString(data.longDescription) ||
-      !Number.isFinite(data.totalArea) ||
-      !isNonEmptyString(data.coverImageUrl) ||
-      !isNonEmptyString(data.whatsappMessage)
+      !isNonEmptyString(title) ||
+      !isValidEnumValue(PropertyPurpose, purpose) ||
+      !isValidEnumValue(PropertyType, type) ||
+      !isValidEnumValue(PropertyCity, city) ||
+      !Number.isFinite(priceNumber)
     ) {
       return NextResponse.json(
-        { error: "Payload inválido para criação de imóvel." },
+        { error: "Payload inválido para criação de imóvel (mínimo: title, price, city, type, purpose)." },
         { status: 400 }
       );
     }
 
-    if (data.status && !isValidEnumValue(PropertyStatus, data.status)) {
+    const siteUrl = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+    const slugBase = isNonEmptyString(data?.slug)
+      ? slugify(String(data.slug))
+      : slugify(title)
+
+    let slug = await generateUniqueSlug(slugBase)
+
+    const citySlug = isNonEmptyString(data?.citySlug)
+      ? String(data.citySlug).trim()
+      : String(city)
+
+    const neighborhood = isNonEmptyString(data?.neighborhood)
+      ? String(data.neighborhood).trim()
+      : DEFAULT_NEIGHBORHOOD
+
+    const shortDescription = isNonEmptyString(data?.shortDescription)
+      ? String(data.shortDescription).trim()
+      : buildShortDescription({ title, city: String(city) })
+
+    const longDescription = isNonEmptyString(data?.longDescription)
+      ? String(data.longDescription).trim()
+      : shortDescription
+
+    const totalAreaNumber =
+      data?.totalArea === undefined || data?.totalArea === null
+        ? DEFAULT_TOTAL_AREA
+        : Number(data?.totalArea)
+
+    const totalArea = Number.isFinite(totalAreaNumber)
+      ? Math.max(DEFAULT_TOTAL_AREA, totalAreaNumber)
+      : DEFAULT_TOTAL_AREA
+
+    const coverImageUrl = isNonEmptyString(data?.coverImageUrl)
+      ? String(data.coverImageUrl).trim()
+      : DEFAULT_COVER_IMAGE_URL
+
+    const whatsappMessage = isNonEmptyString(data?.whatsappMessage)
+      ? String(data.whatsappMessage).trim()
+      : buildDefaultWhatsappMessage({ title, slug, siteUrl })
+
+    if (data?.status && !isValidEnumValue(PropertyStatus, data.status)) {
       return NextResponse.json(
         { error: "Status inválido." },
         { status: 400 }
       );
     }
 
-    const existing = await prisma.property.findUnique({
-      where: { slug: data.slug },
-      select: { id: true },
-    });
-    if (existing) {
-      return NextResponse.json(
-        { error: "Já existe um imóvel com este slug." },
-        { status: 409 }
-      );
-    }
+    const normalizedImages = normalizeImages(data.images)
 
-    const normalizedImages = normalizeImages(data.images);
+    // Double-check: caso aconteça colisão inesperada, não quebra a importação em lote.
+    const existing = await prisma.property.findUnique({
+      where: { slug },
+      select: { id: true },
+    })
+    if (existing) {
+      slug = await generateUniqueSlug(`${slugBase}-${Date.now()}`)
+    }
 
     const property = await prisma.property.create({
       data: {
-        slug: data.slug,
-        title: data.title,
-        purpose: data.purpose,
-        type: data.type,
-        city: data.city,
-        citySlug: data.citySlug,
-        neighborhood: data.neighborhood,
-        price: Number(data.price),
-        priceSuffix: data.priceSuffix ?? null,
-        priceNote: data.priceNote ?? null,
-        shortDescription: data.shortDescription,
-        longDescription: data.longDescription,
-        bedrooms: data.bedrooms ?? null,
-        bathrooms: data.bathrooms ?? null,
-        parkingSpaces: data.parkingSpaces ?? null,
-        totalArea: Number(data.totalArea),
-        builtArea: data.builtArea ?? null,
-        coverImageUrl: data.coverImageUrl,
-        featured: data.featured ?? false,
-        specialOpportunity: data.specialOpportunity ?? false,
-        tags: Array.isArray(data.tags) ? data.tags : [],
-        status: data.status ?? PropertyStatus.disponivel,
-        whatsappMessage: data.whatsappMessage,
+        slug,
+        title,
+        purpose,
+        type,
+        city,
+        citySlug,
+        neighborhood,
+        price: priceNumber,
+        priceSuffix: data?.priceSuffix ?? null,
+        priceNote: data?.priceNote ?? null,
+        shortDescription,
+        longDescription,
+        bedrooms: data?.bedrooms ?? null,
+        bathrooms: data?.bathrooms ?? null,
+        parkingSpaces: data?.parkingSpaces ?? null,
+        totalArea,
+        builtArea: data?.builtArea ?? null,
+        coverImageUrl,
+        featured: data?.featured ?? false,
+        specialOpportunity: data?.specialOpportunity ?? false,
+        tags: Array.isArray(data?.tags) ? data.tags : [],
+        status: data?.status ?? PropertyStatus.disponivel,
+        whatsappMessage,
         images: normalizedImages
           ? {
               create: normalizedImages,

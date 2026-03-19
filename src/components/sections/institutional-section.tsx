@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { Container } from '@/components/layout/container'
 import { Button } from '@/components/ui/button'
 import { BROKER_NAME } from '@/lib/constants'
@@ -43,13 +44,15 @@ export function InstitutionalSection() {
         <div className="mx-auto grid max-w-5xl items-center gap-10 md:grid-cols-2 lg:gap-16">
           <div className="relative">
             <div className="absolute -left-4 top-0 h-full w-1 rounded-full bg-gradient-to-b from-dourado to-azul-medio" />
-            <div className="flex aspect-[4/5] items-center justify-center overflow-hidden rounded-xl bg-cinza-50 shadow-[var(--shadow-md)]">
-              <div className="text-center">
-                <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-azul-escuro text-4xl font-bold text-white shadow-[var(--shadow-lg)]">
-                  MB
-                </div>
-                <p className="mt-4 text-sm text-cinza-600">Foto do corretor</p>
-              </div>
+            <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-cinza-50 shadow-[var(--shadow-md)]">
+              <Image
+                src="/marcilio.jpg"
+                alt={BROKER_NAME}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
+                priority
+              />
             </div>
           </div>
           <div>

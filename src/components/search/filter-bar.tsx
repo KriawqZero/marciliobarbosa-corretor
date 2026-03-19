@@ -52,7 +52,11 @@ export function FilterBar() {
 
   const handleChange = (name: string, value: string) => {
     const qs = createQueryString(name, value)
-    router.push(`${pathname}${qs ? `?${qs}` : ''}`)
+    const params = new URLSearchParams(qs)
+    // Trocar filtros deve voltar para a primeira página.
+    params.delete('page')
+    const nextQs = params.toString()
+    router.push(`${pathname}${nextQs ? `?${nextQs}` : ''}`)
   }
 
   const selectClasses =

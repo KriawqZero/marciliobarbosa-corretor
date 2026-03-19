@@ -7,4 +7,6 @@ export type {
   PropertyStatus,
   PropertyFilter,
   CategoryMeta,
+  PaginatedResult,
+  PaginatedProperties,
 } from './property'
