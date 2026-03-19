@@ -1,7 +1,62 @@
+import { HeroSection } from '@/components/sections/hero-section'
+import { CategoryCards } from '@/components/sections/category-cards'
+import { FeaturedProperties } from '@/components/sections/featured-properties'
+import { SpecialOpportunities } from '@/components/sections/special-opportunities'
+import { CitySection } from '@/components/sections/city-section'
+import { InstitutionalSection } from '@/components/sections/institutional-section'
+import { CTASection } from '@/components/sections/cta-section'
+import {
+  BROKER_NAME,
+  BROKER_PHONE_DISPLAY,
+  BROKER_EMAIL,
+} from '@/lib/constants'
+
 export default function Home() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
   return (
-    <main>
-      <div>Hello world!</div>
-    </main>
-  );
+    <>
+      <HeroSection />
+      <CategoryCards />
+      <FeaturedProperties />
+      <SpecialOpportunities />
+      <CitySection />
+      <InstitutionalSection />
+      <CTASection />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'RealEstateAgent',
+            name: BROKER_NAME,
+            url: siteUrl,
+            telephone: BROKER_PHONE_DISPLAY,
+            email: BROKER_EMAIL,
+            areaServed: [
+              {
+                '@type': 'City',
+                name: 'Corumbá',
+                address: {
+                  '@type': 'PostalAddress',
+                  addressRegion: 'MS',
+                  addressCountry: 'BR',
+                },
+              },
+              {
+                '@type': 'City',
+                name: 'Ladário',
+                address: {
+                  '@type': 'PostalAddress',
+                  addressRegion: 'MS',
+                  addressCountry: 'BR',
+                },
+              },
+            ],
+          }),
+        }}
+      />
+    </>
+  )
 }
