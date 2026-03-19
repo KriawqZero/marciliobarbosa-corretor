@@ -8,6 +8,7 @@ import {
   PropertyType,
 } from "@/generated/prisma/enums";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { moveObject, generateFinalPath, generateTempPath } from "@/lib/storage";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: env.DATABASE_URL }),
@@ -61,6 +62,11 @@ function isValidEnumValue<T extends Record<string, string>>(
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function extractTempIdFromUrl(url: string): string | null {
+  const match = url.match(/\/temp\/([^/]+)\//);
+  return match ? match[1] : null;
 }
 
 function parseBoolean(value: string | null): boolean | undefined {
@@ -476,6 +482,49 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // Move images from temp to final location
+    if (property.images && property.images.length > 0) {
+      const updatedImages = await Promise.all(
+        property.images.map(async (img, index) => {
+          const tempId = extractTempIdFromUrl(img.src);
+          if (!tempId) return img; // Not a temp image
+
+          const fromPath = generateTempPath(img.src.split('/').pop() || '', tempId);
+          const toPath = generateFinalPath(img.src.split('/').pop() || '', property.id);
+
+          try {
+            const finalUrl = await moveObject(fromPath, toPath);
+            // Update the image in the database
+            await prisma.propertyImage.update({
+              where: { id: img.id },
+              data: { src: finalUrl },
+            });
+            return { ...img, src: finalUrl };
+          } catch (err) {
+            console.error('Failed to move image:', err);
+            return img;
+          }
+        })
+      );
+
+      // Reload property with updated images
+      const updatedProperty = await prisma.property.findUnique({
+        where: { id: property.id },
+        include: {
+          images: {
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+      });
+
+      if (updatedProperty) {
+        return NextResponse.json(
+          { property: serializeProperty(updatedProperty) },
+          { status: 201 }
+        );
+      }
+    }
 
     return NextResponse.json(
       { property: serializeProperty(property) },

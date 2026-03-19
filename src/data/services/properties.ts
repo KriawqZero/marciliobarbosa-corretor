@@ -1,5 +1,5 @@
+'use server';
 import type { Property, PropertyFilter, CategoryMeta, PaginatedProperties } from '@/types'
-import { mockProperties } from '@/data/mocks/properties'
 import { CATEGORIES } from '@/lib/constants'
 import { env } from 'process'
 import { PrismaClient } from '@/generated/prisma/client'
@@ -10,38 +10,6 @@ import {
   PropertyStatus,
   PropertyType,
 } from '@/generated/prisma/enums'
-
-function matchesFilter(property: Property, filter: PropertyFilter): boolean {
-  if (filter.purpose && property.purpose !== filter.purpose) return false
-  if (filter.type && property.type !== filter.type) return false
-  if (filter.citySlug && property.citySlug !== filter.citySlug) return false
-  if (filter.minPrice && property.price < filter.minPrice) return false
-  if (filter.maxPrice && property.price > filter.maxPrice) return false
-  if (filter.bedrooms && (!property.bedrooms || property.bedrooms < filter.bedrooms))
-    return false
-  if (filter.featured !== undefined && property.featured !== filter.featured)
-    return false
-  if (
-    filter.specialOpportunity !== undefined &&
-    property.specialOpportunity !== filter.specialOpportunity
-  )
-    return false
-  if (filter.status && property.status !== filter.status) return false
-  if (filter.search) {
-    const q = filter.search.toLowerCase()
-    const searchable = [
-      property.title,
-      property.shortDescription,
-      property.neighborhood,
-      property.city,
-      ...property.tags,
-    ]
-      .join(' ')
-      .toLowerCase()
-    if (!searchable.includes(q)) return false
-  }
-  return true
-}
 
 const prisma =
   typeof env.DATABASE_URL === 'string' && env.DATABASE_URL.length > 0
@@ -181,12 +149,7 @@ function buildPrismaWhere(filter?: PropertyFilter) {
 export async function getProperties(
   filter?: PropertyFilter,
 ): Promise<Property[]> {
-  if (!prisma) {
-    if (!filter) return mockProperties.filter((p) => p.status === 'disponivel')
-    return mockProperties.filter(
-      (p) => p.status === 'disponivel' && matchesFilter(p, filter),
-    )
-  }
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
 
   const where = buildPrismaWhere(filter)
   const properties = await prisma.property.findMany({
@@ -203,7 +166,7 @@ export async function getProperties(
 export async function getPropertyBySlug(
   slug: string,
 ): Promise<Property | null> {
-  if (!prisma) return mockProperties.find((p) => p.slug === slug) ?? null
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
 
   const property = await prisma.property.findFirst({
     where: { slug },
@@ -217,9 +180,7 @@ export async function getPropertyBySlug(
 }
 
 export async function getFeaturedProperties(): Promise<Property[]> {
-  if (!prisma) {
-    return mockProperties.filter((p) => p.featured && p.status === 'disponivel')
-  }
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
 
   const properties = await prisma.property.findMany({
     where: { featured: true, status: PropertyStatus.disponivel },
@@ -234,11 +195,7 @@ export async function getFeaturedProperties(): Promise<Property[]> {
 }
 
 export async function getSpecialOpportunities(): Promise<Property[]> {
-  if (!prisma) {
-    return mockProperties.filter(
-      (p) => p.specialOpportunity && p.status === 'disponivel',
-    )
-  }
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
 
   const properties = await prisma.property.findMany({
     where: { specialOpportunity: true, status: PropertyStatus.disponivel },
@@ -256,16 +213,7 @@ export async function getRelatedProperties(
   property: Property,
   limit = 3,
 ): Promise<Property[]> {
-  if (!prisma) {
-    return mockProperties
-      .filter(
-        (p) =>
-          p.id !== property.id &&
-          p.status === 'disponivel' &&
-          (p.citySlug === property.citySlug || p.type === property.type),
-      )
-      .slice(0, limit)
-  }
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
 
   const related = await prisma.property.findMany({
     where: {
@@ -310,35 +258,8 @@ export async function getPropertiesPaged(
   const page = options?.page && options.page > 0 ? options.page : 1
   const limit = options?.limit && options.limit > 0 ? options.limit : 12
 
-  if (!prisma) {
-    // Paginação para fallback/mock
-    const props = filter
-      ? mockProperties.filter((p) => p.status === 'disponivel' && matchesFilter(p, filter))
-      : mockProperties.filter((p) => p.status === 'disponivel')
-
-    const sorted =
-      options?.order === 'preco_asc'
-        ? [...props].sort((a, b) => a.price - b.price)
-        : options?.order === 'preco_desc'
-          ? [...props].sort((a, b) => b.price - a.price)
-          : props
-
-    const total = sorted.length
-    const pages = Math.ceil(total / limit)
-    const start = (page - 1) * limit
-    const items = sorted.slice(start, start + limit)
-
-    return {
-      items,
-      page,
-      limit,
-      total,
-      pages,
-      hasPrev: page > 1,
-      hasNext: page < pages,
-    }
-  }
-
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
+  
   const where = buildPrismaWhere(filter)
   const [total, properties] = await Promise.all([
     prisma.property.count({ where }),
