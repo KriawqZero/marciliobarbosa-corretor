@@ -386,7 +386,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const siteUrl = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const siteUrl =
+      env.NEXT_PUBLIC_SITE_URL || 'https://marciliobarbosacorretor.com.br'
 
     const slugBase = isNonEmptyString(data?.slug)
       ? slugify(String(data.slug))

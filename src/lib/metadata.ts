@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { SITE_NAME } from './constants'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://marciliobarbosacorretor.com.br'
 export const DEFAULT_SOCIAL_IMAGE = '/marcilio.jpg'
 export const LISTINGS_SOCIAL_IMAGE = '/a.jpg'
 

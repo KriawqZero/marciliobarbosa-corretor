@@ -46,7 +46,8 @@ export const metadata = buildMetadata({
 })
 
 export default function Home() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://marciliobarbosacorretor.com.br'
 
   return (
     <>

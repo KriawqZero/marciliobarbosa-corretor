@@ -14,9 +14,9 @@ export const metadata: Metadata = {
     default: `${SITE_NAME} — Imóveis em Corumbá e Ladário`,
     template: `%s | ${SITE_NAME}`,
   },
-  description: `${BROKER_NAME}, corretor de imóveis em Corumbá-MS e Ladário-MS. Casas, terrenos, apartamentos e oportunidades. Atendimento personalizado via WhatsApp.`,
+  description: `${BROKER_NAME} em Corumbá-MS e Ladário-MS. Casas, terrenos, apartamentos e oportunidades com atendimento personalizado via WhatsApp.`,
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://marciliobarbosacorretor.com.br',
   ),
   openGraph: {
     siteName: SITE_NAME,
