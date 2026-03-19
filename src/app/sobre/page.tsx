@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import { Container } from '@/components/layout/container'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { CTASection } from '@/components/sections/cta-section'
@@ -18,8 +19,15 @@ export default function SobrePage() {
 
           <div className="mx-auto max-w-3xl">
             <div className="mb-8 flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-8">
-              <div className="mb-4 flex h-32 w-32 flex-shrink-0 items-center justify-center rounded-full bg-azul-escuro text-4xl font-bold text-white sm:mb-0">
-                MB
+              <div className="relative mb-4 h-32 w-32 flex-shrink-0 overflow-hidden rounded-full bg-azul-escuro sm:mb-0">
+                <Image
+                  src="/marcilio.jpg"
+                  alt={BROKER_NAME}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 128px"
+                  className="object-cover"
+                  priority
+                />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-cinza-900 sm:text-3xl">

@@ -1,5 +1,6 @@
 import { BROKER_NAME, BROKER_PHONE_DISPLAY } from '@/lib/constants'
 import { WhatsAppButton } from '@/components/shared/whatsapp-button'
+import Image from 'next/image'
 
 interface PropertyContactBoxProps {
   whatsappMessage: string
@@ -12,9 +13,19 @@ export function PropertyContactBox({ whatsappMessage }: PropertyContactBoxProps)
       <div className="hidden lg:block">
         <div className="sticky top-24 rounded-xl border border-cinza-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-azul-escuro text-lg font-bold text-white">
+            {/*<div className="flex h-12 w-12 items-center justify-center rounded-full bg-azul-escuro text-lg font-bold text-white">
               MB
-            </div>
+            </div>*/}
+              <div className="relative mb-4 h-18 w-18 flex-shrink-0 overflow-hidden rounded-full bg-azul-escuro sm:mb-0">
+                <Image
+                  src="/marcilio.jpg"
+                  alt={BROKER_NAME}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 128px"
+                  className="object-cover"
+                  priority
+                />
+              </div>
             <div>
               <p className="font-semibold text-cinza-900">{BROKER_NAME}</p>
               <p className="text-sm text-cinza-600">Corretor de Imóveis</p>

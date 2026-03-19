@@ -70,6 +70,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             {property.title}
           </h3>
 
+
         </div>
         <p className="mb-3 text-sm text-cinza-600">
           {property.city} — {property.neighborhood}
