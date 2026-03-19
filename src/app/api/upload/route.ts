@@ -61,9 +61,13 @@ export async function POST(req: Request) {
     // Detect image dimensions
     const { width, height } = await getImageDimensions(buffer)
 
-    // Generate temp ID and upload path
+    // Generate unique filename to prevent collisions
     const tempId = crypto.randomUUID()
-    const filename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const uniqueSuffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 5)
+    const filename = originalName.includes('.')
+      ? originalName.replace(/\.([^.]+)$/, `-${uniqueSuffix}.$1`)
+      : `${originalName}-${uniqueSuffix}`
     const path = generateTempPath(filename, tempId)
 
     // Upload to MinIO
