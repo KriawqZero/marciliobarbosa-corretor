@@ -2,7 +2,7 @@ import type { CategoryMeta } from '@/types'
 
 export const SITE_NAME = 'Corretor Marcilio Barbosa'
 export const BROKER_NAME = 'Corretor Marcilio Barbosa'
-export const BROKER_PHONE = '55679996294660'
+export const BROKER_PHONE = '5567996294660'
 export const BROKER_PHONE_DISPLAY = '(67) 99629-4660'
 export const BROKER_EMAIL = 'barbosasmarcilio@gmail.com'
 export const BROKER_CRECI = 'CRECI/MS 17.159'
