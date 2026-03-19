@@ -71,7 +71,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .hero-youtube-iframe-landscape {
   /* Zoom/crop para evitar barras pretas quando a proporção muda */
-  transform: translate(-50%, -50%) scale(1.22);
+  /* Mais “zoom” no desktop para preencher sem letterbox */
+  transform: translate(-50%, -50%) scale(1.48);
 }
 
 .hero-youtube-iframe-portrait {
