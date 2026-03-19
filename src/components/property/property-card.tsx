@@ -69,9 +69,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
           <h3 className="line-clamp-2 text-base font-semibold text-cinza-900 group-hover:text-azul-escuro">
             {property.title}
           </h3>
-          <span className="shrink-0 text-xs font-medium text-cinza-600">
-            Cód. {code}
-          </span>
+
         </div>
         <p className="mb-3 text-sm text-cinza-600">
           {property.city} — {property.neighborhood}
