@@ -4,7 +4,7 @@ export const SITE_NAME = 'Marcilio Barbosa Imóveis'
 export const BROKER_NAME = 'Marcilio Barbosa'
 export const BROKER_PHONE = '55679996294660'
 export const BROKER_PHONE_DISPLAY = '(67) 99629-4660'
-export const BROKER_EMAIL = 'contato@marciliobarbosa.com.br'
+export const BROKER_EMAIL = 'barbosasmarcilio@gmail.com'
 export const BROKER_CRECI = 'CRECI/MS 17.159'
 
 export const WHATSAPP_DEFAULT_MESSAGE =

@@ -1,0 +1,23 @@
+meta {
+  name: POST user
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:3000/api/user
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: NqY2V7RAEuXYKuLG+cBhUfblq4IJic1dzOnIy/JHCvo=
+}
+
+body:json {
+  {
+    "email": "marcilio.corretor@email.com",
+    "password": "marcilio123",
+    "role": "admin"
+  }
+}
