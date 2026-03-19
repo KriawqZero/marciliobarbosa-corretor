@@ -11,6 +11,9 @@ import {
   BROKER_EMAIL,
 } from '@/lib/constants'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default function Home() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
