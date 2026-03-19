@@ -485,8 +485,8 @@ export async function POST(req: Request) {
 
     // Move images from temp to final location
     if (property.images && property.images.length > 0) {
-      const updatedImages = await Promise.all(
-        property.images.map(async (img, index) => {
+      await Promise.all(
+        property.images.map(async (img) => {
           const tempId = extractTempIdFromUrl(img.src);
           if (!tempId) return img; // Not a temp image
 

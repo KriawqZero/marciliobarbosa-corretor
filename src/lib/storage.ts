@@ -7,6 +7,18 @@ const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
 const bucket = process.env.AWS_S3_BUCKET_NAME
 const publicUrl = process.env.AWS_PUBLIC_URL
 
+function normalizeUrlPart(value: string): string {
+  // Remove `:443` no final para ficar canônico com o esperado (sem porta).
+  const withoutDefaultPort = value.replace(/:443$/, '')
+  // Remove barra no final pra evitar `//` no join.
+  return withoutDefaultPort.replace(/\/+$/, '')
+}
+
+function normalizeKeyPart(value: string): string {
+  // Remove barra no início pra evitar `/bucket//path`.
+  return value.replace(/^\/+/, '')
+}
+
 function getClient(): S3Client {
   if (!endpoint || !accessKeyId || !secretAccessKey) {
     throw new Error('AWS S3 configuration missing (AWS_ENDPOINT_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)')
@@ -39,7 +51,9 @@ export async function uploadToMinIO(
     })
   )
 
-  return `${publicUrl}/${path}`
+  return `${normalizeUrlPart(publicUrl)}/${normalizeKeyPart(bucket)}/${normalizeKeyPart(
+    path,
+  )}`
 }
 
 export async function moveObject(fromPath: string, toPath: string): Promise<string> {
@@ -66,7 +80,9 @@ export async function moveObject(fromPath: string, toPath: string): Promise<stri
     })
   )
 
-  return `${publicUrl}/${toPath}`
+  return `${normalizeUrlPart(publicUrl)}/${normalizeKeyPart(bucket)}/${normalizeKeyPart(
+    toPath,
+  )}`
 }
 
 export async function deleteObject(path: string): Promise<void> {

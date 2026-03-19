@@ -35,8 +35,6 @@ function AreaIcon() {
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  const code = String(property.id).padStart(4, '0')
-
   return (
     <Link
       href={`/imovel/${property.slug}`}
