@@ -2,13 +2,24 @@ import { Container } from '@/components/layout/container'
 import { Button } from '@/components/ui/button'
 import { HeroFilterPanel } from '@/components/search/hero-filter-panel'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { HeroVideoBackground } from '@/components/sections/hero-video-background'
 
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden bg-azul-escuro py-16 sm:py-20 lg:py-28">
-      <div className="absolute inset-0 bg-gradient-to-br from-azul-escuro via-azul-escuro/95 to-azul-medio" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(44,95,138,0.4),transparent_70%)]" />
-      <Container className="relative">
+      <div className="absolute inset-0">
+        {/* Fallback leve para acessibilidade/compatibilidade */}
+        <div className="hero-youtube-fallback absolute inset-0 bg-gradient-to-br from-azul-escuro via-azul-escuro/95 to-azul-medio" />
+        <div className="hero-youtube-fallback absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(44,95,138,0.4),transparent_70%)]" />
+
+        {/* Background de vídeo (sem controles) */}
+        <HeroVideoBackground />
+
+        {/* Escurece o vídeo para manter contraste do texto */}
+        <div className="hero-youtube-overlay" aria-hidden="true" />
+      </div>
+
+      <Container className="relative z-10">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <div>
             <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-dourado">
