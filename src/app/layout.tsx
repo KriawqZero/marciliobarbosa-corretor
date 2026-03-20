@@ -26,6 +26,11 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
   },
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
   other: {
     'geo.region': 'BR-MS',
     'geo.placename': 'Corumbá',

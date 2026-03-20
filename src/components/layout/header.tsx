@@ -1,12 +1,12 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Container } from './container'
 import { MobileMenu } from './mobile-menu'
 import { NavLinks } from './nav-links'
-import { BROKER_NAME } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 
@@ -38,30 +38,23 @@ export function Header() {
         <Link
           href="/"
           className={cn(
-            'flex items-center gap-2 text-lg font-bold transition-colors duration-300',
-            isHeroMerged ? 'text-white' : 'text-azul-escuro',
+            'flex items-center transition-opacity duration-300',
+            isHeroMerged ? 'opacity-100' : 'opacity-95 hover:opacity-100',
           )}
+          aria-label="Página inicial Marcilio Barbosa"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="28"
-            height="28"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={cn(
-              'transition-colors duration-300',
-              isHeroMerged ? 'text-white' : 'text-azul-escuro',
-            )}
-          >
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-          <span className="hidden sm:inline">{BROKER_NAME}</span>
-          <span className="sm:hidden">MB</span>
+          <Image
+            src={
+              isHeroMerged
+                ? '/LogoMarcilioBarbosaCorretor/Logo%20Marcilio%20Barbosa%20(1).svg'
+                : '/LogoMarcilioBarbosaCorretor/Logo%20Marcilio%20Barbosa%20(3).svg'
+            }
+            alt="Marcilio Barbosa Corretor"
+            width={180}
+            height={32}
+            priority
+            className="h-8 w-auto sm:h-9"
+          />
         </Link>
 
         <NavLinks inverted={isHeroMerged} />

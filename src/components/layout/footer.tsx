@@ -1,7 +1,7 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { Container } from './container'
 import {
-  BROKER_NAME,
   BROKER_PHONE_DISPLAY,
   BROKER_EMAIL,
   BROKER_CRECI,
@@ -14,7 +14,13 @@ export function Footer() {
     <footer className="bg-azul-escuro text-white/90">
       <Container className="grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <h3 className="mb-4 text-lg font-bold text-white">{BROKER_NAME}</h3>
+          <Image
+            src="/LogoMarcilioBarbosaCorretor/Logo%20Marcilio%20Barbosa%20(1).svg"
+            alt="Marcilio Barbosa Corretor"
+            width={220}
+            height={40}
+            className="mb-4 h-10 w-auto"
+          />
           <p className="mb-2 text-sm text-white/70">
             Corretor de imóveis em Corumbá-MS e Ladário-MS. Atendimento
             personalizado para compra, venda e aluguel.
