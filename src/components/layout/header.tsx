@@ -1,17 +1,46 @@
+'use client'
+
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Container } from './container'
 import { MobileMenu } from './mobile-menu'
 import { NavLinks } from './nav-links'
 import { BROKER_NAME } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 
 export function Header() {
+  const pathname = usePathname()
+  const [isAtTop, setIsAtTop] = useState(true)
+
+  useEffect(() => {
+    const syncScrollState = () => setIsAtTop(window.scrollY <= 8)
+
+    syncScrollState()
+    window.addEventListener('scroll', syncScrollState, { passive: true })
+
+    return () => window.removeEventListener('scroll', syncScrollState)
+  }, [pathname])
+
+  const isHeroMerged = pathname === '/' && isAtTop
+
   return (
-    <header className="sticky top-0 z-50 border-b border-cinza-200 bg-white/95 backdrop-blur-sm">
+    <header
+      className={cn(
+        'sticky top-0 z-50 border-b transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 lg:fixed lg:inset-x-0',
+        isHeroMerged
+          ? 'border-cinza-200 bg-white/95 shadow-sm backdrop-blur-sm lg:border-transparent lg:bg-transparent lg:shadow-none lg:backdrop-blur-none'
+          : 'border-cinza-200 bg-white/95 shadow-sm backdrop-blur-sm',
+      )}
+    >
       <Container className="relative flex h-16 items-center justify-between">
         <Link
           href="/"
-          className="flex items-center gap-2 text-lg font-bold text-azul-escuro"
+          className={cn(
+            'flex items-center gap-2 text-lg font-bold transition-colors duration-300',
+            isHeroMerged ? 'text-azul-escuro lg:text-white' : 'text-azul-escuro',
+          )}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -23,7 +52,10 @@ export function Header() {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-azul-escuro"
+            className={cn(
+              'transition-colors duration-300',
+              isHeroMerged ? 'text-azul-escuro lg:text-white' : 'text-azul-escuro',
+            )}
           >
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <polyline points="9 22 9 12 15 12 15 22" />
@@ -32,14 +64,14 @@ export function Header() {
           <span className="sm:hidden">MB</span>
         </Link>
 
-        <NavLinks />
+        <NavLinks inverted={isHeroMerged} />
 
         <div className="flex items-center gap-3">
           <a
             href={getWhatsAppLink()}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden items-center gap-2 rounded-lg bg-whatsapp px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-110 md:inline-flex"
+            className="hidden items-center gap-2 rounded-lg bg-whatsapp px-4 py-2 text-sm font-semibold text-white transition-[filter,box-shadow] hover:brightness-110 md:inline-flex"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -5,7 +5,11 @@ import { usePathname } from 'next/navigation'
 import { NAV_LINKS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
-export function NavLinks() {
+interface NavLinksProps {
+  inverted?: boolean
+}
+
+export function NavLinks({ inverted = false }: NavLinksProps) {
   const pathname = usePathname()
 
   return (
@@ -22,9 +26,13 @@ export function NavLinks() {
             href={link.href}
             className={cn(
               'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              isActive
-                ? 'bg-azul-escuro/5 text-azul-escuro'
-                : 'text-cinza-600 hover:bg-cinza-50 hover:text-azul-escuro',
+              inverted
+                ? isActive
+                  ? 'bg-white/14 text-white'
+                  : 'text-white/78 hover:bg-white/10 hover:text-white'
+                : isActive
+                  ? 'bg-azul-escuro/5 text-azul-escuro'
+                  : 'text-cinza-600 hover:bg-cinza-50 hover:text-azul-escuro',
             )}
             aria-current={isActive ? 'page' : undefined}
           >

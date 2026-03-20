@@ -41,7 +41,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${inter.className} ${fraunces.variable} antialiased`}>
         <Header />
-        <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+        <main className="min-h-[calc(100vh-4rem)] lg:pt-16">{children}</main>
         <Footer />
         <WhatsAppCTA />
       </body>

@@ -6,7 +6,7 @@ import { HeroVideoBackground } from '@/components/sections/hero-video-background
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-azul-escuro py-16 sm:py-20 lg:py-32">
+    <section className="relative overflow-hidden bg-azul-escuro py-16 sm:py-20 lg:-mt-16 lg:min-h-[46rem] lg:pb-32 lg:pt-40">
       <div className="absolute inset-0">
         {/* Fallback leve para acessibilidade/compatibilidade */}
         <div className="hero-youtube-fallback absolute inset-0 bg-gradient-to-br from-azul-escuro via-azul-escuro/95 to-azul-medio" />
