@@ -28,9 +28,9 @@ export function Header() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 border-b transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 lg:fixed lg:inset-x-0',
+        'fixed inset-x-0 top-0 z-50 border-b transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300',
         isHeroMerged
-          ? 'border-cinza-200 bg-white/95 shadow-sm backdrop-blur-sm lg:border-transparent lg:bg-transparent lg:shadow-none lg:backdrop-blur-none'
+          ? 'border-transparent bg-transparent shadow-none backdrop-blur-none'
           : 'border-cinza-200 bg-white/95 shadow-sm backdrop-blur-sm',
       )}
     >
@@ -39,7 +39,7 @@ export function Header() {
           href="/"
           className={cn(
             'flex items-center gap-2 text-lg font-bold transition-colors duration-300',
-            isHeroMerged ? 'text-azul-escuro lg:text-white' : 'text-azul-escuro',
+            isHeroMerged ? 'text-white' : 'text-azul-escuro',
           )}
         >
           <svg
@@ -54,7 +54,7 @@ export function Header() {
             strokeLinejoin="round"
             className={cn(
               'transition-colors duration-300',
-              isHeroMerged ? 'text-azul-escuro lg:text-white' : 'text-azul-escuro',
+              isHeroMerged ? 'text-white' : 'text-azul-escuro',
             )}
           >
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -84,7 +84,7 @@ export function Header() {
             </svg>
             WhatsApp
           </a>
-          <MobileMenu />
+          <MobileMenu inverted={isHeroMerged} />
         </div>
       </Container>
     </header>

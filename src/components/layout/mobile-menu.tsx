@@ -6,7 +6,11 @@ import { usePathname } from 'next/navigation'
 import { NAV_LINKS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
-export function MobileMenu() {
+interface MobileMenuProps {
+  inverted?: boolean
+}
+
+export function MobileMenu({ inverted = false }: MobileMenuProps) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
@@ -14,7 +18,12 @@ export function MobileMenu() {
     <>
       <button
         onClick={() => setOpen(!open)}
-        className="flex h-10 w-10 items-center justify-center rounded-lg text-azul-escuro hover:bg-cinza-50 lg:hidden"
+        className={cn(
+          'flex h-10 w-10 items-center justify-center rounded-lg transition-colors lg:hidden',
+          inverted
+            ? 'text-white hover:bg-white/10'
+            : 'text-azul-escuro hover:bg-cinza-50',
+        )}
         aria-label={open ? 'Fechar menu' : 'Abrir menu'}
         aria-expanded={open}
       >
