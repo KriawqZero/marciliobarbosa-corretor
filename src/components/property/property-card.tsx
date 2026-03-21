@@ -52,12 +52,12 @@ export function PropertyCard({ property }: PropertyCardProps) {
           <PurposeBadge purpose={property.purpose} />
           {property.specialOpportunity && <OpportunityBadge />}
         </div>
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 pb-3 pt-10">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent px-4 pb-3 pt-10">
           <span className="block text-xl font-bold text-white drop-shadow-sm">
             {formatPriceWithSuffix(property.price, property.priceSuffix)}
           </span>
           {property.priceNote && (
-            <span className="text-xs font-medium text-verde">{property.priceNote}</span>
+            <span className="text-xs font-medium text-green-700 font-semibold">{property.priceNote}</span>
           )}
         </div>
       </div>
