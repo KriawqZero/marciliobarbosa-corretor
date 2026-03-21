@@ -43,6 +43,19 @@ export function Header() {
           )}
           aria-label="Página inicial Marcilio Barbosa"
         >
+          {/* Mobile: só o símbolo (minimalista). Desktop: logotipo completo */}
+          <Image
+            src={
+              isHeroMerged
+                ? '/LogoMarcilioBarbosaCorretor/SmboloFundoBranco.svg'
+                : '/LogoMarcilioBarbosaCorretor/SmboloFundoAzul.svg'
+            }
+            alt="Marcilio Barbosa Corretor"
+            width={40}
+            height={40}
+            priority
+            className="h-9 w-9 shrink-0 object-contain md:hidden"
+          />
           <Image
             src={
               isHeroMerged
@@ -53,7 +66,7 @@ export function Header() {
             width={180}
             height={32}
             priority
-            className="h-8 w-auto sm:h-9"
+            className="hidden h-8 w-auto sm:h-9 md:block"
           />
         </Link>
 
