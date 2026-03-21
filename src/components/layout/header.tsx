@@ -45,14 +45,10 @@ export function Header() {
         >
           {/* Mobile: só o símbolo (minimalista). Desktop: logotipo completo */}
           <Image
-            src={
-              isHeroMerged
-                ? '/LogoMarcilioBarbosaCorretor/SmboloFundoBranco.svg'
-                : '/LogoMarcilioBarbosaCorretor/SmboloFundoAzul.svg'
-            }
+            src="/LogoMarcilioBarbosaCorretor/SmboloFundoTransparente.svg"
             alt="Marcilio Barbosa Corretor"
-            width={40}
-            height={40}
+            width={48}
+            height={48}
             priority
             className="h-9 w-9 shrink-0 object-contain md:hidden"
           />
