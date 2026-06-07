@@ -15,6 +15,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [thumbStart, setThumbStart] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [isImageLoading, setIsImageLoading] = useState(true)
 
   if (images.length === 0) {
     return (
@@ -38,20 +39,25 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
   }
 
   const handleSetActiveIndex = (i: number) => {
-    setActiveIndex(i)
-    updateThumbWindow(i)
+    if (i !== activeIndex) {
+      setIsImageLoading(true)
+      setActiveIndex(i)
+      updateThumbWindow(i)
+    }
   }
 
   // Make sure the thumbnail window scrolls properly when navigating outside
   // If changing pictures (for example, via lightbox navigation), keep thumbnails in sync
   const handlePrev = () => {
     const nextIndex = (activeIndex - 1 + images.length) % images.length
+    setIsImageLoading(true)
     setActiveIndex(nextIndex)
     updateThumbWindow(nextIndex)
   }
 
   const handleNext = () => {
     const nextIndex = (activeIndex + 1) % images.length
+    setIsImageLoading(true)
     setActiveIndex(nextIndex)
     updateThumbWindow(nextIndex)
   }
@@ -78,15 +84,21 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
       <div className="space-y-3">
         <button
           onClick={() => setLightboxOpen(true)}
-          className="relative aspect-video w-full cursor-zoom-in overflow-hidden rounded-xl"
+          className="relative aspect-video w-full cursor-zoom-in overflow-hidden rounded-xl bg-cinza-100"
         >
+          {isImageLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-cinza-100/30">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-azul-escuro/20 border-t-azul-escuro"></div>
+            </div>
+          )}
           <Image
             src={activeImage.src}
             alt={activeImage.alt || title}
             fill
             sizes="(max-width: 768px) 100vw, 70vw"
-            className="object-cover"
+            className={`object-cover transition-opacity duration-300 ${isImageLoading ? 'opacity-40' : 'opacity-100'}`}
             priority
+            onLoad={() => setIsImageLoading(false)}
           />
         </button>
 
@@ -201,15 +213,21 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
           )}
 
           <div
-            className="relative max-h-[85vh] max-w-[90vw]"
+            className="relative flex max-h-[85vh] max-w-[90vw] items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
+            {isImageLoading && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-black/20">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white"></div>
+              </div>
+            )}
             <Image
               src={activeImage.src}
               alt={activeImage.alt || title}
               width={activeImage.width}
               height={activeImage.height}
-              className="max-h-[85vh] w-auto rounded-lg object-contain"
+              className={`max-h-[85vh] w-auto rounded-lg object-contain transition-opacity duration-300 ${isImageLoading ? 'opacity-40' : 'opacity-100'}`}
+              onLoad={() => setIsImageLoading(false)}
             />
           </div>
 
