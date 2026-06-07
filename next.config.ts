@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'bucket-production-3e6d.up.railway.app',
+        hostname: 'media.marciliobarbosacorretor.com.br',
       },
     ],
   },
