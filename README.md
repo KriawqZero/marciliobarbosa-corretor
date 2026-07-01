@@ -8,7 +8,9 @@ Este projeto nasceu de uma necessidade real e muito próxima: foi desenvolvido s
 
 Como ele não é um usuário avançado de tecnologia, a plataforma foge da complexidade de um SaaS genérico ou de painéis confusos. O objetivo foi construir uma ferramenta de trabalho prática: apresentar os imóveis com alta qualidade visual, rankear bem no Google (SEO local) e converter visitantes em contatos no WhatsApp com o menor atrito possível.
 
-A aplicação inclui tanto o site público, otimizado para o usuário final, quanto uma área administrativa focada em simplicidade extrema para o cadastro de imóveis.
+A aplicação inclui tanto o site público, otimizado para o usuário final, quanto uma área administrativa web e endpoints para o aplicativo mobile.
+
+> 📱 **Nota sobre o ecossistema:** Para abstrair ainda mais a complexidade para o meu pai no dia a dia, também desenvolvi um aplicativo mobile nativo (Expo/React Native) que consome a API deste repositório para envio dos imóveis. Você pode conferir o código do app complementar aqui: [app-marciliobarbosa-corretor](https://github.com/KriawqZero/app-marciliobarbosa-corretor).
 
 ## Arquitetura e Decisões Técnicas
 
