@@ -8,12 +8,21 @@ import { SITE_URL, getAbsoluteUrl } from './metadata'
 /// tem envio próprio e monta o índice sobre o do Bing, então o caminho real é
 /// avisar o Bing. O Google não participa do protocolo — lá a atualização
 /// continua vindo do sitemap e do Search Console.
-const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/IndexNow'
+/// Caminho em minúsculas, como na especificação. `api.indexnow.org` é o
+/// endereço genérico: entregar aqui repassa para todos os buscadores
+/// participantes, em vez de exigir um POST por buscador.
+const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow'
 
-/// A chave prova que quem enviou controla o domínio. Fica no ambiente porque é
-/// um segredo por propriedade, e é servida em texto puro pela rota
-/// `/indexnow-key.txt` — o buscador busca esse arquivo para conferir.
+/// A chave prova que quem enviou controla o domínio: o buscador baixa o arquivo
+/// de chave e compara com o que veio no POST.
+///
+/// A especificação limita a chave a 8–128 caracteres entre a-z, A-Z, 0-9 e
+/// hífen. `openssl rand -hex 16` produz um valor válido.
 export const INDEXNOW_KEY = process.env.INDEXNOW_KEY ?? ''
+
+/// O arquivo fica na raiz do site. Isso importa: quando a localização é
+/// declarada via `keyLocation`, a especificação limita as URLs notificáveis às
+/// que começam no diretório do arquivo. Na raiz, o site inteiro é coberto.
 export const INDEXNOW_KEY_PATH = '/indexnow-key.txt'
 
 export interface IndexNowResult {

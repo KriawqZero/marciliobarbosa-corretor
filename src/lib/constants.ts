@@ -23,25 +23,36 @@ export const CITIES = ['Corumbá', 'Ladário'] as const
 /// lateral e o resultado de mapa em buscas como "corretor de imóveis Corumbá".
 /// ---------------------------------------------------------------------------
 
-/// Endereço do escritório/atendimento. Ex.: 'Rua Delamare, 1234 - Centro'.
+/// Logradouro e número do atendimento. Ex.: 'Rua Marechal Antônio Maria
+/// Coelho, 1234'. Ainda em branco: sem o número, meio endereço no JSON-LD é
+/// pior que nenhum, porque o buscador tenta casar com um ponto no mapa e erra.
 export const BROKER_STREET_ADDRESS = ''
-/// CEP do endereço acima. Ex.: '79300-000'.
-export const BROKER_POSTAL_CODE = ''
-/// Coordenadas do escritório, como string decimal. Ex.: '-19.0078' / '-57.6547'.
-export const BROKER_LATITUDE = ''
-export const BROKER_LONGITUDE = ''
-/// Perfis oficiais (Instagram, Facebook, YouTube, LinkedIn, perfil do Google).
-/// Alimentam `sameAs`: é assim que o buscador liga o site à mesma entidade.
-export const BROKER_SOCIAL_PROFILES: string[] = []
-/// Horário de atendimento no formato schema.org.
-/// Ex.: [{ days: ['Monday','Tuesday'], opens: '08:00', closes: '18:00' }]
+export const BROKER_POSTAL_CODE = '79304-070'
+/// Coordenadas do ponto de atendimento, como string decimal.
+export const BROKER_LATITUDE = '-19.0249553'
+export const BROKER_LONGITUDE = '-57.6424487'
+/// Perfis oficiais. Alimentam `sameAs`: é assim que o buscador confirma que o
+/// site e os perfis são a mesma pessoa. URLs limpas, sem parâmetro de sessão ou
+/// de tema — o buscador trata cada variação como endereço diferente.
+export const BROKER_SOCIAL_PROFILES: string[] = [
+  'https://www.facebook.com/marcilio.barbosa.169',
+  'https://www.instagram.com/barbosamarcilio17159',
+]
+/// Horário de atendimento no formato schema.org. É o que produz o "Aberto
+/// agora" no resultado de busca.
 export const BROKER_OPENING_HOURS: Array<{
   days: string[]
   opens: string
   closes: string
-}> = []
-/// Ano em que começou a atuar como corretor. Ex.: '2015'.
-export const BROKER_FOUNDING_YEAR = ''
+}> = [
+  {
+    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    opens: '07:00',
+    closes: '17:00',
+  },
+]
+/// Ano em que começou a atuar como corretor.
+export const BROKER_FOUNDING_YEAR = '2016'
 
 /// Faixa de preço praticada, na notação que o Google entende ($ a $$$$).
 export const BROKER_PRICE_RANGE = '$$'

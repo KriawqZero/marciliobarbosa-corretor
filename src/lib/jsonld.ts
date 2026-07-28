@@ -72,8 +72,6 @@ function cityAddress(citySlug: string, cityName: string): JsonLdObject {
 /// painel lateral do Google e as respostas de assistentes de IA sobre "corretor
 /// de imóveis em Corumbá".
 export function buildBrokerJsonLd(): JsonLdObject {
-  const hasOffice = Boolean(BROKER_STREET_ADDRESS)
-
   return pruneEmpty({
     '@type': 'RealEstateAgent',
     '@id': ORGANIZATION_ID,
@@ -110,16 +108,17 @@ export function buildBrokerJsonLd(): JsonLdObject {
         name: 'CRECI-MS — Conselho Regional de Corretores de Imóveis de Mato Grosso do Sul',
       },
     },
-    address: hasOffice
-      ? {
-          '@type': 'PostalAddress',
-          streetAddress: BROKER_STREET_ADDRESS,
-          addressLocality: 'Corumbá',
-          addressRegion: 'MS',
-          postalCode: BROKER_POSTAL_CODE,
-          addressCountry: 'BR',
-        }
-      : undefined,
+    /// Cidade, estado e CEP são declarados mesmo sem logradouro: já situam o
+    /// negócio na região certa. O logradouro entra sozinho quando existir —
+    /// `pruneEmpty` retira o campo em branco em vez de afirmar endereço vazio.
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: BROKER_STREET_ADDRESS,
+      addressLocality: 'Corumbá',
+      addressRegion: 'MS',
+      postalCode: BROKER_POSTAL_CODE,
+      addressCountry: 'BR',
+    },
     geo:
       BROKER_LATITUDE && BROKER_LONGITUDE
         ? {
