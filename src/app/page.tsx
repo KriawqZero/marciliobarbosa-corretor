@@ -29,6 +29,11 @@ import { BROKER_NAME, SITE_NAME } from '@/lib/constants'
 /// `DATABASE_URL`, ISR aqui quebra o deploy. Trocar exige garantir o banco no
 /// ambiente de build; é uma decisão de infraestrutura, não de SEO, e por isso
 /// fica registrada e não aplicada.
+///
+/// O que dava para fazer sem banco no build já foi feito: as consultas em
+/// `data/services/properties.ts` passam pelo cache de dados do Next
+/// (`unstable_cache`), então a renderização por requisição continua, mas sem
+/// bater no Postgres a cada visita.
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 

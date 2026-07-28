@@ -17,6 +17,7 @@ import {
   SITE_NAME,
 } from './constants'
 import { SITE_URL, getAbsoluteUrl } from './metadata'
+import { isRealNeighborhood } from './format'
 
 /// Identificadores estáveis do grafo. Usar `@id` em vez de repetir o bloco
 /// inteiro do corretor em cada página é o que faz o buscador entender que é
@@ -320,11 +321,19 @@ export function buildPropertyJsonLd(property: Property): JsonLdObject {
         value: property.totalArea,
         unitCode: 'MTK',
       },
-      {
-        '@type': 'PropertyValue',
-        name: 'Bairro',
-        value: property.neighborhood,
-      },
+      /// Bairro só entra na lista quando existe de fato. Deixar a entrada com o
+      /// valor vazio não resolve: `pruneEmpty` tira o campo `value`, mas o
+      /// objeto sobrevive por causa do `name`, e o buscador lê um atributo
+      /// "Bairro" sem conteúdo.
+      ...(isRealNeighborhood(property.neighborhood)
+        ? [
+            {
+              '@type': 'PropertyValue',
+              name: 'Bairro',
+              value: property.neighborhood,
+            },
+          ]
+        : []),
       {
         '@type': 'PropertyValue',
         name: 'Tipo de imóvel',
@@ -371,7 +380,9 @@ export function buildPropertyJsonLd(property: Property): JsonLdObject {
     '@type': 'RealEstateListing',
     '@id': `${url}#anuncio`,
     url,
-    name: `${property.title} — ${property.neighborhood}, ${property.city}-MS`,
+    name: isRealNeighborhood(property.neighborhood)
+      ? `${property.title} — ${property.neighborhood}, ${property.city}-MS`
+      : `${property.title} — ${property.city}-MS`,
     headline: property.title,
     description: property.shortDescription,
     inLanguage: 'pt-BR',

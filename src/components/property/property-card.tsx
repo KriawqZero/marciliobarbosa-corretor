@@ -5,6 +5,7 @@ import {
   formatArea,
   formatDateShort,
   formatPriceWithSuffix,
+  isRealNeighborhood,
   isRedundantPriceNote,
 } from '@/lib/format'
 import { PurposeBadge, OpportunityBadge } from './property-badge'
@@ -85,7 +86,9 @@ export function PropertyCard({ property, priority = false }: PropertyCardProps) 
           </h3>
         </div>
         <p className="mb-3 text-sm text-cinza-600">
-          {property.city} — {property.neighborhood}
+          {property.city}
+          {isRealNeighborhood(property.neighborhood) &&
+            ` — ${property.neighborhood}`}
         </p>
 
         <div className="flex flex-wrap items-center gap-3 border-t border-cinza-200 pt-3 text-cinza-600">

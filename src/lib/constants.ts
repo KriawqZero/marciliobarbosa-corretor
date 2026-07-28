@@ -12,6 +12,12 @@ export const BROKER_CRECI = 'CRECI/MS 17.159'
 export const WHATSAPP_DEFAULT_MESSAGE =
   'Olá! Gostaria de mais informações sobre imóveis disponíveis em Corumbá e Ladário.'
 
+/// Tag do cache de dados do catálogo (`unstable_cache` em
+/// `data/services/properties.ts`). Vive aqui — e não lá — porque arquivos
+/// `'use server'` só podem exportar funções assíncronas, e `revalidate.ts`
+/// também precisa dela para invalidar tudo após uma escrita.
+export const PROPERTIES_CACHE_TAG = 'properties'
+
 export const CITIES = ['Corumbá', 'Ladário'] as const
 
 /// ---------------------------------------------------------------------------
@@ -23,11 +29,9 @@ export const CITIES = ['Corumbá', 'Ladário'] as const
 /// lateral e o resultado de mapa em buscas como "corretor de imóveis Corumbá".
 /// ---------------------------------------------------------------------------
 
-/// Logradouro e número do atendimento. Ex.: 'Rua Marechal Antônio Maria
-/// Coelho, 1234'. Ainda em branco: sem o número, meio endereço no JSON-LD é
-/// pior que nenhum, porque o buscador tenta casar com um ponto no mapa e erra.
-export const BROKER_STREET_ADDRESS = ''
-export const BROKER_POSTAL_CODE = '79304-070'
+/// Logradouro e número do atendimento.
+export const BROKER_STREET_ADDRESS = 'Rua Marechal Antônio Maria Coelho, 3213'
+export const BROKER_POSTAL_CODE = '79311-030'
 /// Coordenadas do ponto de atendimento, como string decimal.
 export const BROKER_LATITUDE = '-19.0249553'
 export const BROKER_LONGITUDE = '-57.6424487'

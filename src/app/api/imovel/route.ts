@@ -127,6 +127,42 @@ async function generateUniqueSlug(baseSlug: string): Promise<string> {
 }
 
 const DEFAULT_NEIGHBORHOOD = 'A definir'
+
+/// Reaproveita a grafia de um bairro já cadastrado.
+///
+/// Sem isto, "centro", "Centro" e "CENTRO" viram três bairros distintos para o
+/// site: o resumo das páginas de categoria lista os três, e a busca por bairro
+/// encontra só um terço dos imóveis. A comparação ignora acento e caixa, mas o
+/// que fica gravado é sempre a grafia que já estava no banco — assim a primeira
+/// vez que o bairro é digitado define a forma correta, e as próximas só
+/// seguem.
+async function canonicalNeighborhood(
+  input: string,
+  citySlug?: string,
+): Promise<string> {
+  const trimmed = input.trim().replace(/\s+/g, ' ')
+  if (!trimmed) return DEFAULT_NEIGHBORHOOD
+
+  const key = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+
+  const existing = await prisma.property.findMany({
+    where: citySlug ? { citySlug } : undefined,
+    select: { neighborhood: true },
+    distinct: ['neighborhood'],
+  });
+
+  const match = existing.find(
+    (row) => row.neighborhood && key(row.neighborhood) === key(trimmed),
+  );
+
+  return match?.neighborhood ?? trimmed
+}
+
 const DEFAULT_TOTAL_AREA = 1
 /// Placeholder local. Nunca usar foto de banco de imagens como capa: o visitante
 /// veria uma casa genérica ilustrando um imóvel real.
@@ -402,7 +438,7 @@ export async function POST(req: Request) {
       : String(city)
 
     const neighborhood = isNonEmptyString(data?.neighborhood)
-      ? String(data.neighborhood).trim()
+      ? await canonicalNeighborhood(String(data.neighborhood), citySlug)
       : DEFAULT_NEIGHBORHOOD
 
     const shortDescription = isNonEmptyString(data?.shortDescription)
@@ -630,6 +666,12 @@ export async function PUT(req: Request) {
       ? normalizeImages(data.images)
       : undefined;
 
+    // Mesma normalização da criação: a edição também precisa cair na grafia já
+    // existente, senão o bairro corrigido aqui vira um bairro novo.
+    const neighborhood = isNonEmptyString(data.neighborhood)
+      ? await canonicalNeighborhood(String(data.neighborhood), data.citySlug)
+      : undefined;
+
     await prisma.property.update({
       where: { id: existing.id },
       data: {
@@ -639,9 +681,7 @@ export async function PUT(req: Request) {
         ...(data.type ? { type: data.type } : {}),
         ...(data.city ? { city: data.city } : {}),
         ...(isNonEmptyString(data.citySlug) ? { citySlug: data.citySlug } : {}),
-        ...(isNonEmptyString(data.neighborhood)
-          ? { neighborhood: data.neighborhood }
-          : {}),
+        ...(neighborhood ? { neighborhood } : {}),
         ...(Number.isFinite(data.price) ? { price: Number(data.price) } : {}),
         ...(data.priceSuffix !== undefined ? { priceSuffix: data.priceSuffix } : {}),
         ...(data.priceNote !== undefined ? { priceNote: data.priceNote } : {}),

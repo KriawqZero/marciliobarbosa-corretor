@@ -113,16 +113,9 @@ buscador trata como dado errado.
 | `BROKER_SOCIAL_PROFILES` | ✅ Facebook e Instagram |
 | `BROKER_OPENING_HOURS` | ✅ Seg–sex 07:00–17:00, sáb 07:00–12:00 |
 | `BROKER_FOUNDING_YEAR` | ✅ `2016` |
-| `BROKER_STREET_ADDRESS` | ⬜ **Falta:** logradouro e número |
+| `BROKER_STREET_ADDRESS` | ✅ Rua Marechal Antônio Maria Coelho, 3213 |
 
-**Sobre o logradouro:** as coordenadas caem na Rua Marechal Antônio Maria
-Coelho, bairro Cristo Redentor, em Corumbá. Falta o número. Enquanto estiver em
-branco, o site declara cidade, estado e CEP — o que já situa o negócio na
-região — e omite a rua, porque meio endereço faz o buscador tentar casar com um
-ponto no mapa e errar.
-
-Vale conferir o CEP: `79304-070` e o bairro Cristo Redentor não parecem bater
-(a base pública de endereços aponta `79311-030` para aquele trecho da rua).
+Todos os campos da ficha de negócio local estão preenchidos.
 
 ### Falta também no conteúdo
 
@@ -130,9 +123,10 @@ Vale conferir o CEP: `79304-070` e o bairro Cristo Redentor não parecem bater
    sitemap de imagens. "Fachada da casa com garagem para 2 carros" rende busca;
    "IMG_2043" não rende nada.
 
-2. **Bairro sempre preenchido.** Hoje o cadastro aceita `"A definir"` como
-   padrão. Bairro é o termo mais buscado depois da cidade ("casa no Centro de
-   Corumbá"), e entra no title, na descrição e no JSON-LD.
+2. **Bairro preenchido sempre que possível.** Bairro é o termo mais buscado
+   depois da cidade ("casa no Centro de Corumbá") e entra no title, na descrição
+   e no JSON-LD. O site já se protege quando falta (ver abaixo), mas o imóvel
+   sem bairro simplesmente não disputa essas buscas.
 
 3. **Descrição longa de verdade em cada imóvel.** Quando `longDescription` fica
    igual à curta, a página do imóvel tem pouco texto próprio e compete mal.
@@ -141,10 +135,44 @@ Vale conferir o CEP: `79304-070` e o bairro Cristo Redentor não parecem bater
    breve". Já existe `POST /api/leads`; ligar os dois fecha uma lacuna que hoje
    é um caminho morto para quem prefere formulário a WhatsApp.
 
-5. **Páginas por bairro.** Hoje há páginas por cidade e por tipo. Os bairros com
-   acervo recorrente (Centro, Popular, Nova Corumbá, Cristo Redentor) renderiam
-   páginas próprias com busca bem mais específica. Vale quando houver volume de
-   imóveis suficiente para a página não nascer vazia.
+5. **Páginas por bairro.** Hoje há páginas por cidade, por tipo e por
+   combinação. Os bairros com acervo recorrente renderiam páginas próprias com
+   busca ainda mais específica. Vale quando houver volume de imóveis suficiente
+   para a página não nascer vazia.
+
+---
+
+## 4.1. Bairro: o que o site faz sozinho
+
+O cadastro grava `"A definir"` quando o bairro não é informado. Isso é rótulo de
+ausência, não um bairro — e antes vazava para o Google: o título do resultado
+saía como *"Casa à venda em A definir, Corumbá-MS"*.
+
+Três coisas passaram a acontecer sem intervenção:
+
+**1. Imóvel sem bairro não anuncia bairro.** Título, descrição, palavras-chave,
+JSON-LD, cards e a página do imóvel caem para a cidade quando o bairro não
+existe. O anúncio fica com menos alcance, mas nunca com texto quebrado.
+
+**2. A grafia é unificada na gravação.** Digitar `CENTRO`, `centro` ou
+`  Centro  ` grava `Centro` se esse bairro já existir no acervo — a comparação
+ignora acento, caixa e espaço extra. Sem isso, "Nova Corumbá" e "nova corumba"
+virariam dois bairros: o resumo das páginas listaria os dois e a busca por
+bairro encontraria metade dos imóveis. A primeira vez que um bairro é digitado
+define a grafia; as próximas seguem.
+
+**3. `GET /api/bairros` devolve os bairros já usados**, opcionalmente filtrados
+por `?cidade=corumba` ou `?cidade=ladario`. Serve para o app mobile mostrar uma
+lista para tocar em vez de um campo para digitar. A lista sai do próprio banco —
+nenhum nome inventado — e melhora sozinha conforme o acervo cresce.
+
+```bash
+curl "https://marciliobarbosacorretor.com.br/api/bairros?cidade=corumba"
+# {"cidade":"corumba","total":4,"neighborhoods":["Centro","Cristo Redentor",...]}
+```
+
+O passo que ainda depende do app: trocar o campo de texto por um seletor
+alimentado por esse endpoint, com opção de digitar um bairro novo.
 
 ---
 
