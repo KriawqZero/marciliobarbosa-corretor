@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { Property } from '@/types'
 import {
   formatArea,
+  formatDateShort,
   formatPriceWithSuffix,
   isRedundantPriceNote,
 } from '@/lib/format'
@@ -62,15 +63,15 @@ export function PropertyCard({ property, priority = false }: PropertyCardProps) 
           <PurposeBadge purpose={property.purpose} />
           {property.specialOpportunity && <OpportunityBadge />}
         </div>
-        {/* Chapa sólida em vez de gradiente: texto sobre foto precisa de fundo
-            opaco para passar em contraste, e o preço é a informação que o olho
-            procura primeiro no card. */}
-        <div className="absolute bottom-3 left-3 rounded-lg bg-azul-escuro/95 px-3 py-1.5">
-          <span className="block text-lg font-bold tabular-nums text-white">
+        {/* Faixa em gradiente sobre a foto. O gradiente sobe um pouco mais e
+            fecha mais escuro na base do que antes, porque em fotos claras o
+            preço encostava no limite de contraste. */}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/55 to-transparent px-4 pb-3 pt-14">
+          <span className="block text-xl font-bold tabular-nums text-white drop-shadow-sm">
             {formatPriceWithSuffix(property.price, property.priceSuffix)}
           </span>
           {!isRedundantPriceNote(property.priceNote) && (
-            <span className="block text-xs font-medium text-dourado-claro">
+            <span className="block text-xs font-semibold text-dourado-claro drop-shadow-sm">
               {property.priceNote}
             </span>
           )}
@@ -87,7 +88,7 @@ export function PropertyCard({ property, priority = false }: PropertyCardProps) 
           {property.city} — {property.neighborhood}
         </p>
 
-        <div className="flex flex-wrap gap-3 border-t border-cinza-200 pt-3 text-cinza-600">
+        <div className="flex flex-wrap items-center gap-3 border-t border-cinza-200 pt-3 text-cinza-600">
           {property.bedrooms != null && property.bedrooms > 0 && (
             <div className="flex items-center gap-1">
               <BedIcon />
@@ -104,6 +105,15 @@ export function PropertyCard({ property, priority = false }: PropertyCardProps) 
             <AreaIcon />
             <span className="text-xs font-medium">{formatArea(property.totalArea)}</span>
           </div>
+
+          {/* `<time>` legível por máquina: alimenta o `datePosted` da página do
+              imóvel e dá ao buscador um sinal de quão fresco é o anúncio. */}
+          <time
+            dateTime={property.createdAt}
+            className="ml-auto text-[11px] text-cinza-600/70"
+          >
+            {formatDateShort(property.createdAt)}
+          </time>
         </div>
       </div>
     </Link>

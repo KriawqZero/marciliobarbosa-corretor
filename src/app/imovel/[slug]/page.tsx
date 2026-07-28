@@ -11,7 +11,7 @@ import { RelatedProperties } from '@/components/property/related-properties'
 import { ShareButtons } from '@/components/property/share-buttons'
 import { PurposeBadge, StatusBadge, OpportunityBadge } from '@/components/property/property-badge'
 import { getPropertyBySlug } from '@/data/services/properties'
-import { formatPrice } from '@/lib/format'
+import { formatPrice, formatDateLong } from '@/lib/format'
 import { SITE_NAME } from '@/lib/constants'
 import { buildMetadata, getAbsoluteUrl } from '@/lib/metadata'
 
@@ -108,6 +108,21 @@ export default async function ImovelPage({ params }: PageProps) {
             <p className="mt-1 text-cinza-600">
               {property.city} — {property.neighborhood}
             </p>
+            <p className="mt-1 text-xs text-cinza-600/80">
+              Publicado em{' '}
+              <time dateTime={property.createdAt}>
+                {formatDateLong(property.createdAt)}
+              </time>
+              {property.updatedAt.slice(0, 10) !==
+                property.createdAt.slice(0, 10) && (
+                <>
+                  {' · atualizado em '}
+                  <time dateTime={property.updatedAt}>
+                    {formatDateLong(property.updatedAt)}
+                  </time>
+                </>
+              )}
+            </p>
 
             <PropertyPrice
               price={property.price}
@@ -168,6 +183,10 @@ export default async function ImovelPage({ params }: PageProps) {
             description: property.shortDescription,
             url: url,
             image: property.coverImage,
+            // `datePosted` é a propriedade que o schema.org define para anúncio
+            // imobiliário; o buscador usa para saber se a oferta é atual.
+            datePosted: property.createdAt,
+            dateModified: property.updatedAt,
             offers: {
               '@type': 'Offer',
               price: property.price,
