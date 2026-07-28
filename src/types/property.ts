@@ -58,6 +58,13 @@ export interface CategoryMeta {
   title: string
   description: string
   filter: PropertyFilter
+  /// Título/descrição usados só na aba do navegador e no resultado de busca.
+  /// Separados de `title`/`description` porque o H1 da página precisa ser curto
+  /// e o title do buscador precisa carregar cidade e intenção ("à venda em
+  /// Corumbá-MS"), que ficariam pesados no cabeçalho visual.
+  seoTitle?: string
+  seoDescription?: string
+  keywords?: string[]
   /// Mensagem quando a categoria não tem nenhum imóvel. As categorias vazias
   /// continuam visíveis, então a página precisa explicar e dar uma saída.
   emptyTitle?: string

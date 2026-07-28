@@ -9,6 +9,7 @@ import {
 } from "@/generated/prisma/enums";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { moveObject, generateFinalPath, generateTempPath } from "@/lib/storage";
+import { revalidatePropertyRoutes } from "@/lib/revalidate";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: env.DATABASE_URL }),
@@ -485,6 +486,14 @@ export async function POST(req: Request) {
       },
     });
 
+    // Limpa o cache das páginas de catálogo e notifica o IndexNow. Chamado aqui,
+    // logo após a escrita: `revalidatePath` só marca a entrada como suja, então
+    // a movimentação de imagens abaixo, que ainda altera o banco, já entra na
+    // próxima renderização. Sem isto, um imóvel cadastrado hoje só apareceria
+    // em `/imoveis` quando o cache expirasse — e no buscador, quando o robô
+    // resolvesse voltar.
+    await revalidatePropertyRoutes([property.slug]);
+
     // Move images from temp to final location
     if (property.images && property.images.length > 0) {
       await Promise.all(
@@ -591,7 +600,7 @@ export async function PUT(req: Request) {
         ...(isNonEmptyString(data.id) ? { id: data.id } : {}),
         ...(isNonEmptyString(data.slug) ? { slug: data.slug } : {}),
       },
-      select: { id: true },
+      select: { id: true, slug: true },
     });
 
     if (!existing) {
@@ -683,6 +692,13 @@ export async function PUT(req: Request) {
       },
     });
 
+    // O slug pode ter mudado nesta edição. Revalidar os dois caminhos: o antigo
+    // para o buscador ver que virou 404, o novo para ele descobrir a URL nova.
+    const affectedSlugs = Array.from(
+      new Set([existing.slug, property?.slug].filter(Boolean) as string[])
+    );
+    await revalidatePropertyRoutes(affectedSlugs);
+
     return NextResponse.json({
       property: property ? serializeProperty(property) : null,
     });
@@ -729,7 +745,7 @@ export async function DELETE(req: Request) {
         ...(isNonEmptyString(id) ? { id } : {}),
         ...(isNonEmptyString(slug) ? { slug } : {}),
       },
-      select: { id: true },
+      select: { id: true, slug: true },
     });
 
     if (!existing) {
@@ -740,6 +756,11 @@ export async function DELETE(req: Request) {
     }
 
     await prisma.property.delete({ where: { id: existing.id } });
+
+    // A URL removida também é notificada: é assim que o buscador descobre que
+    // deve tirar o anúncio do índice em vez de continuar mandando visita para
+    // uma página que agora é 404.
+    await revalidatePropertyRoutes([existing.slug]);
 
     return NextResponse.json({ message: "Imóvel removido com sucesso." });
   } catch (error) {

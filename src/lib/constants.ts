@@ -14,6 +14,69 @@ export const WHATSAPP_DEFAULT_MESSAGE =
 
 export const CITIES = ['Corumbá', 'Ladário'] as const
 
+/// ---------------------------------------------------------------------------
+/// Dados de negócio local (ficha do Google / JSON-LD)
+///
+/// Tudo que estiver vazio aqui é simplesmente omitido do JSON-LD — schema
+/// incompleto é melhor que schema com campo inventado, que o Google trata como
+/// dado errado. Preencher estes campos é o que permite o site disputar o painel
+/// lateral e o resultado de mapa em buscas como "corretor de imóveis Corumbá".
+/// ---------------------------------------------------------------------------
+
+/// Endereço do escritório/atendimento. Ex.: 'Rua Delamare, 1234 - Centro'.
+export const BROKER_STREET_ADDRESS = ''
+/// CEP do endereço acima. Ex.: '79300-000'.
+export const BROKER_POSTAL_CODE = ''
+/// Coordenadas do escritório, como string decimal. Ex.: '-19.0078' / '-57.6547'.
+export const BROKER_LATITUDE = ''
+export const BROKER_LONGITUDE = ''
+/// Perfis oficiais (Instagram, Facebook, YouTube, LinkedIn, perfil do Google).
+/// Alimentam `sameAs`: é assim que o buscador liga o site à mesma entidade.
+export const BROKER_SOCIAL_PROFILES: string[] = []
+/// Horário de atendimento no formato schema.org.
+/// Ex.: [{ days: ['Monday','Tuesday'], opens: '08:00', closes: '18:00' }]
+export const BROKER_OPENING_HOURS: Array<{
+  days: string[]
+  opens: string
+  closes: string
+}> = []
+/// Ano em que começou a atuar como corretor. Ex.: '2015'.
+export const BROKER_FOUNDING_YEAR = ''
+
+/// Faixa de preço praticada, na notação que o Google entende ($ a $$$$).
+export const BROKER_PRICE_RANGE = '$$'
+
+/// Coordenadas e CEP base das cidades atendidas. São dados públicos das sedes
+/// municipais e servem para o `areaServed` e para o endereço dos anúncios, que
+/// não têm logradouro cadastrado.
+export const CITY_GEO: Record<
+  string,
+  { name: string; latitude: number; longitude: number; postalCode: string }
+> = {
+  corumba: {
+    name: 'Corumbá',
+    latitude: -19.0078,
+    longitude: -57.6547,
+    postalCode: '79300-000',
+  },
+  ladario: {
+    name: 'Ladário',
+    latitude: -19.0047,
+    longitude: -57.6017,
+    postalCode: '79370-000',
+  },
+}
+
+/// Rótulo legível de cada tipo de imóvel. Usado em title, descrição e JSON-LD
+/// para o texto indexado dizer "Casa"/"Terreno" em vez do slug do banco.
+export const PROPERTY_TYPE_LABEL: Record<string, string> = {
+  casa: 'Casa',
+  apartamento: 'Apartamento',
+  terreno: 'Terreno',
+  rural: 'Área rural',
+  comercial: 'Imóvel comercial',
+}
+
 export const NAV_LINKS = [
   { href: '/', label: 'Início' },
   { href: '/imoveis', label: 'Imóveis' },
@@ -28,6 +91,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'venda',
     title: 'Imóveis à Venda',
     description: 'Casas, terrenos e apartamentos à venda em Corumbá e Ladário',
+    seoTitle: 'Imóveis à Venda em Corumbá e Ladário - MS',
+    seoDescription:
+      'Casas, terrenos, apartamentos e imóveis comerciais à venda em Corumbá-MS e Ladário-MS. Veja fotos, preços e fale direto com o corretor pelo WhatsApp.',
+    keywords: [
+      'imóveis à venda Corumbá',
+      'imóveis à venda Ladário',
+      'comprar imóvel Corumbá MS',
+      'casas à venda Corumbá',
+    ],
     filter: { purpose: 'venda' },
     emptyTitle: 'Ainda não tenho imóveis à venda publicados',
     emptyDescription:
@@ -37,6 +109,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'aluguel',
     title: 'Imóveis para Alugar',
     description: 'Imóveis disponíveis para aluguel em Corumbá e Ladário',
+    seoTitle: 'Imóveis para Alugar em Corumbá e Ladário - MS',
+    seoDescription:
+      'Casas, apartamentos e pontos comerciais para alugar em Corumbá-MS e Ladário-MS. Valores atualizados e atendimento direto com o corretor no WhatsApp.',
+    keywords: [
+      'aluguel Corumbá MS',
+      'casas para alugar Corumbá',
+      'apartamento para alugar Ladário',
+      'imóveis para locação Corumbá',
+    ],
     filter: { purpose: 'aluguel' },
     emptyTitle: 'Ainda não tenho imóveis para alugar publicados',
     emptyDescription:
@@ -46,6 +127,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'casas',
     title: 'Casas',
     description: 'Casas disponíveis em Corumbá e Ladário',
+    seoTitle: 'Casas à Venda e para Alugar em Corumbá e Ladário - MS',
+    seoDescription:
+      'Casas em Corumbá-MS e Ladário-MS para comprar ou alugar. Veja quartos, área, bairro e fotos de cada casa e fale com o corretor pelo WhatsApp.',
+    keywords: [
+      'casas à venda Corumbá MS',
+      'casas para alugar Corumbá',
+      'casa Ladário MS',
+      'comprar casa Corumbá',
+    ],
     filter: { type: 'casa' },
     emptyTitle: 'Ainda não tenho casas publicadas',
     emptyDescription:
@@ -55,6 +145,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'terrenos',
     title: 'Terrenos',
     description: 'Terrenos à venda em Corumbá e Ladário',
+    seoTitle: 'Terrenos e Lotes à Venda em Corumbá e Ladário - MS',
+    seoDescription:
+      'Terrenos e lotes à venda em Corumbá-MS e Ladário-MS. Veja metragem, bairro e valor de cada terreno e fale direto com o corretor no WhatsApp.',
+    keywords: [
+      'terrenos à venda Corumbá',
+      'lotes Corumbá MS',
+      'terreno Ladário MS',
+      'comprar terreno Corumbá',
+    ],
     filter: { type: 'terreno' },
     emptyTitle: 'Ainda não tenho terrenos publicados',
     emptyDescription:
@@ -64,6 +163,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'apartamentos',
     title: 'Apartamentos',
     description: 'Apartamentos disponíveis em Corumbá e Ladário',
+    seoTitle: 'Apartamentos à Venda e para Alugar em Corumbá - MS',
+    seoDescription:
+      'Apartamentos em Corumbá-MS e Ladário-MS para comprar ou alugar. Veja quartos, área útil, bairro e fotos, e fale com o corretor pelo WhatsApp.',
+    keywords: [
+      'apartamentos Corumbá MS',
+      'apartamento à venda Corumbá',
+      'apartamento para alugar Corumbá',
+      'apartamento Ladário',
+    ],
     filter: { type: 'apartamento' },
     emptyTitle: 'Ainda não tenho apartamentos publicados',
     emptyDescription:
@@ -73,6 +181,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'comercial',
     title: 'Imóveis Comerciais',
     description: 'Pontos comerciais e oportunidades de negócio',
+    seoTitle: 'Imóveis Comerciais e Pontos Comerciais em Corumbá - MS',
+    seoDescription:
+      'Salas, lojas, galpões e pontos comerciais à venda e para alugar em Corumbá-MS e Ladário-MS. Fale com o corretor pelo WhatsApp e agende uma visita.',
+    keywords: [
+      'ponto comercial Corumbá',
+      'sala comercial Corumbá MS',
+      'loja para alugar Corumbá',
+      'galpão Corumbá MS',
+    ],
     filter: { type: 'comercial' },
     emptyTitle: 'Ainda não tenho imóveis comerciais publicados',
     emptyDescription:
@@ -82,6 +199,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'rural',
     title: 'Áreas Rurais',
     description: 'Chácaras, sítios e áreas rurais na região',
+    seoTitle: 'Chácaras, Sítios e Áreas Rurais em Corumbá e Ladário - MS',
+    seoDescription:
+      'Chácaras, sítios e áreas rurais à venda na região de Corumbá-MS e Ladário-MS, no Pantanal. Veja hectares, localização e fale com o corretor no WhatsApp.',
+    keywords: [
+      'chácara Corumbá MS',
+      'sítio à venda Corumbá',
+      'área rural Pantanal',
+      'fazenda Corumbá MS',
+    ],
     filter: { type: 'rural' },
     emptyTitle: 'Ainda não tenho áreas rurais publicadas',
     emptyDescription:
@@ -91,6 +217,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'corumba',
     title: 'Imóveis em Corumbá',
     description: 'Todos os imóveis disponíveis em Corumbá-MS',
+    seoTitle: 'Imóveis em Corumbá - MS: Casas, Terrenos e Apartamentos',
+    seoDescription:
+      'Imóveis em Corumbá-MS para comprar e alugar: casas, terrenos, apartamentos, pontos comerciais e áreas rurais. Corretor local com atendimento no WhatsApp.',
+    keywords: [
+      'imóveis Corumbá MS',
+      'corretor de imóveis Corumbá',
+      'imobiliária Corumbá MS',
+      'casas Corumbá',
+    ],
     filter: { citySlug: 'corumba' },
     emptyTitle: 'Ainda não tenho imóveis publicados em Corumbá',
     emptyDescription:
@@ -100,6 +235,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'ladario',
     title: 'Imóveis em Ladário',
     description: 'Todos os imóveis disponíveis em Ladário-MS',
+    seoTitle: 'Imóveis em Ladário - MS: Casas, Terrenos e Apartamentos',
+    seoDescription:
+      'Imóveis em Ladário-MS para comprar e alugar: casas, terrenos, apartamentos e áreas rurais. Corretor local com atendimento direto pelo WhatsApp.',
+    keywords: [
+      'imóveis Ladário MS',
+      'corretor de imóveis Ladário',
+      'casas Ladário MS',
+      'terreno Ladário',
+    ],
     filter: { citySlug: 'ladario' },
     emptyTitle: 'Ainda não tenho imóveis publicados em Ladário',
     emptyDescription:
@@ -109,6 +253,15 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'oportunidades',
     title: 'Oportunidades Especiais',
     description: 'Oportunidades únicas de negócio na região',
+    seoTitle: 'Oportunidades de Imóveis e Negócios em Corumbá e Ladário',
+    seoDescription:
+      'Imóveis e negócios com condição especial em Corumbá-MS e Ladário-MS: lojas, mercados, pontos em funcionamento e imóveis abaixo do valor de mercado.',
+    keywords: [
+      'oportunidade imóvel Corumbá',
+      'negócio à venda Corumbá MS',
+      'passar ponto Corumbá',
+      'imóvel abaixo do mercado Corumbá',
+    ],
     filter: { specialOpportunity: true },
     emptyTitle: 'Nenhuma oportunidade especial no momento',
     emptyDescription:

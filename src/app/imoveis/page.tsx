@@ -6,43 +6,82 @@ import { PropertyGrid } from '@/components/property/property-grid'
 import { FilterBar } from '@/components/search/filter-bar'
 import { SortSelect } from '@/components/search/sort-select'
 import { PropertyGridSkeleton } from '@/components/shared/loading-skeleton'
+import { JsonLd } from '@/components/shared/json-ld'
 import { getPropertiesPaged } from '@/data/services/properties'
 import type { PropertyFilter, PropertyPurpose, PropertyType } from '@/types'
 import { Pagination } from '@/components/shared/pagination'
-import { buildMetadata, LISTINGS_SOCIAL_IMAGE } from '@/lib/metadata'
+import {
+  buildMetadata,
+  LISTINGS_SOCIAL_IMAGE,
+  NOINDEX_FOLLOW_ROBOTS,
+} from '@/lib/metadata'
+import {
+  buildCollectionPageJsonLd,
+  buildGraph,
+  buildItemListJsonLd,
+} from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/constants'
+import {
+  buildListingCanonical,
+  hasListingFilters,
+  parsePageParam,
+} from '@/lib/utils'
 
-export const metadata: Metadata = buildMetadata({
-  path: '/imoveis',
-  title: 'Imoveis em Corumba e Ladario',
-  description:
-    'Veja imoveis disponiveis para venda e aluguel em Corumba-MS e Ladario-MS: casas, terrenos, apartamentos, comercial e rural.',
-  alternates: {
-    canonical: '/imoveis',
-  },
-  openGraph: {
-    title: `Imoveis em Corumba e Ladario | ${SITE_NAME}`,
-    description:
-      'Catalogo atualizado com oportunidades imobiliarias e atendimento direto via WhatsApp.',
-    images: [
-      {
-        url: LISTINGS_SOCIAL_IMAGE,
-        width: 1200,
-        height: 800,
-        alt: 'Imoveis em Corumba e Ladario',
-      },
-    ],
-  },
-  twitter: {
-    title: `Imoveis em Corumba e Ladario | ${SITE_NAME}`,
-    description:
-      'Casas, terrenos, apartamentos e mais opcoes para compra e aluguel.',
-    images: [LISTINGS_SOCIAL_IMAGE],
-  },
-})
+const PAGE_SIZE = 12
+const BASE_PATH = '/imoveis'
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export async function generateMetadata({
+  searchParams,
+}: PageProps): Promise<Metadata> {
+  const params = await searchParams
+  const page = parsePageParam(params.page)
+  const filtered = hasListingFilters(params)
+
+  /// O título precisa dizer em que página está. Sem isso, todas as páginas da
+  /// paginação chegam ao buscador com o mesmo título e ele agrupa como
+  /// duplicadas, indexando só uma.
+  const pageSuffix = page > 1 ? ` — Página ${page}` : ''
+
+  return buildMetadata({
+    path: BASE_PATH,
+    title: `Imóveis em Corumbá e Ladário-MS${pageSuffix}`,
+    description:
+      'Imóveis à venda e para alugar em Corumbá-MS e Ladário-MS: casas, apartamentos, terrenos, pontos comerciais e áreas rurais. Fotos, preços e contato direto com o corretor.',
+    keywords: [
+      'imóveis Corumbá MS',
+      'imóveis Ladário MS',
+      'corretor de imóveis Corumbá',
+      'casas à venda Corumbá',
+      'aluguel Corumbá MS',
+    ],
+    alternates: {
+      canonical: buildListingCanonical(BASE_PATH, page),
+    },
+    robots: filtered ? NOINDEX_FOLLOW_ROBOTS : undefined,
+    openGraph: {
+      title: `Imóveis em Corumbá e Ladário-MS${pageSuffix} | ${SITE_NAME}`,
+      description:
+        'Catálogo atualizado de imóveis em Corumbá e Ladário, com atendimento direto pelo WhatsApp.',
+      images: [
+        {
+          url: LISTINGS_SOCIAL_IMAGE,
+          width: 1200,
+          height: 800,
+          alt: 'Imóveis em Corumbá e Ladário-MS',
+        },
+      ],
+    },
+    twitter: {
+      title: `Imóveis em Corumbá e Ladário-MS | ${SITE_NAME}`,
+      description:
+        'Casas, terrenos, apartamentos e mais opções para compra e aluguel.',
+      images: [LISTINGS_SOCIAL_IMAGE],
+    },
+  })
 }
 
 function buildFilter(params: Record<string, string | string[] | undefined>): PropertyFilter {
@@ -57,17 +96,12 @@ function buildFilter(params: Record<string, string | string[] | undefined>): Pro
 
 async function PropertyList({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const filter = buildFilter(searchParams)
-
-  const rawPage = searchParams.page
-  const page =
-    typeof rawPage === 'string' && Number.isFinite(Number(rawPage))
-      ? Math.max(1, Math.floor(Number(rawPage)))
-      : 1
+  const page = parsePageParam(searchParams.page)
 
   const ordem = Array.isArray(searchParams.ordem) ? searchParams.ordem[0] : searchParams.ordem
   const order = ordem === 'preco_asc' || ordem === 'preco_desc' ? ordem : undefined
 
-  const paged = await getPropertiesPaged(filter, { page, limit: 12, order })
+  const paged = await getPropertiesPaged(filter, { page, limit: PAGE_SIZE, order })
   const temFiltro = Object.keys(filter).length > 0
 
   return (
@@ -85,13 +119,34 @@ async function PropertyList({ searchParams }: { searchParams: Record<string, str
 
       <PropertyGrid properties={paged.items} />
       <Pagination
-        basePath="/imoveis"
+        basePath={BASE_PATH}
         searchParams={searchParams}
         page={paged.page}
         pages={paged.pages}
         hasPrev={paged.hasPrev}
         hasNext={paged.hasNext}
       />
+
+      {/* Só a listagem sem filtro entra no grafo. Uma lista estruturada de um
+          recorte que já está marcado como noindex daria ao buscador um dado
+          que a própria página diz para ignorar. */}
+      {!hasListingFilters(searchParams) && (
+        <JsonLd
+          data={buildGraph(
+            buildCollectionPageJsonLd({
+              path: BASE_PATH,
+              name: 'Imóveis em Corumbá e Ladário-MS',
+              description:
+                'Catálogo de imóveis à venda e para alugar em Corumbá-MS e Ladário-MS.',
+            }),
+            buildItemListJsonLd(paged.items, {
+              path: BASE_PATH,
+              page: paged.page,
+              limit: PAGE_SIZE,
+            }),
+          )}
+        />
+      )}
     </>
   )
 }
@@ -106,10 +161,11 @@ export default async function ImoveisPage({ searchParams }: PageProps) {
 
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-cinza-900 sm:text-3xl">
-            Todos os Imóveis
+            Imóveis em Corumbá e Ladário
           </h1>
           <p className="mt-1 text-cinza-600">
-            Imóveis disponíveis em Corumbá e Ladário
+            Casas, apartamentos, terrenos, pontos comerciais e áreas rurais para
+            comprar ou alugar, com atendimento direto do corretor.
           </p>
         </div>
 

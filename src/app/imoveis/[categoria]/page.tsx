@@ -7,46 +7,89 @@ import { PropertyGrid } from '@/components/property/property-grid'
 import { FilterBar } from '@/components/search/filter-bar'
 import { SortSelect } from '@/components/search/sort-select'
 import { PropertyGridSkeleton } from '@/components/shared/loading-skeleton'
+import { JsonLd } from '@/components/shared/json-ld'
 import { getPropertiesPaged } from '@/data/services/properties'
-import { CATEGORIES } from '@/lib/constants'
-import { isValidCategory } from '@/lib/utils'
+import { CATEGORIES, VALID_CATEGORIES, SITE_NAME } from '@/lib/constants'
+import {
+  buildListingCanonical,
+  hasListingFilters,
+  isValidCategory,
+  parsePageParam,
+} from '@/lib/utils'
 import type { PropertyFilter, PropertyPurpose, PropertyType } from '@/types'
 import { Pagination } from '@/components/shared/pagination'
-import { buildMetadata, LISTINGS_SOCIAL_IMAGE } from '@/lib/metadata'
-import { SITE_NAME } from '@/lib/constants'
+import {
+  buildMetadata,
+  LISTINGS_SOCIAL_IMAGE,
+  NOINDEX_FOLLOW_ROBOTS,
+} from '@/lib/metadata'
+import {
+  buildCollectionPageJsonLd,
+  buildGraph,
+  buildItemListJsonLd,
+} from '@/lib/jsonld'
+
+const PAGE_SIZE = 12
 
 interface PageProps {
   params: Promise<{ categoria: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+/// Deixa o Next conhecer as categorias válidas em tempo de build. Ganha duas
+/// coisas: a categoria inexistente vira 404 sem consultar o banco, e as páginas
+/// reais começam a responder mais rápido — velocidade de resposta é sinal de
+/// qualidade para o buscador e para o visitante no celular.
+export function generateStaticParams() {
+  return VALID_CATEGORIES.map((categoria) => ({ categoria }))
+}
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: PageProps): Promise<Metadata> {
   const { categoria } = await params
-  if (!isValidCategory(categoria)) return {}
+  if (!isValidCategory(categoria)) {
+    return buildMetadata({
+      title: 'Categoria não encontrada',
+      robots: { index: false, follow: true },
+    })
+  }
 
   const cat = CATEGORIES[categoria]
+  const search = await searchParams
+  const page = parsePageParam(search.page)
+  const filtered = hasListingFilters(search)
+  const basePath = `/imoveis/${categoria}`
+  const pageSuffix = page > 1 ? ` — Página ${page}` : ''
+
+  const title = `${cat.seoTitle ?? cat.title}${pageSuffix}`
+  const description = cat.seoDescription ?? cat.description
+
   return buildMetadata({
-    path: `/imoveis/${categoria}`,
-    title: cat.title,
-    description: cat.description,
+    path: basePath,
+    title,
+    description,
+    keywords: cat.keywords,
     alternates: {
-      canonical: `/imoveis/${categoria}`,
+      canonical: buildListingCanonical(basePath, page),
     },
+    robots: filtered ? NOINDEX_FOLLOW_ROBOTS : undefined,
     openGraph: {
-      title: `${cat.title} | ${SITE_NAME}`,
-      description: cat.description,
+      title: `${cat.seoTitle ?? cat.title} | ${SITE_NAME}`,
+      description,
       images: [
         {
           url: LISTINGS_SOCIAL_IMAGE,
           width: 1200,
           height: 800,
-          alt: cat.title,
+          alt: cat.seoTitle ?? cat.title,
         },
       ],
     },
     twitter: {
-      title: `${cat.title} | ${SITE_NAME}`,
-      description: cat.description,
+      title: `${cat.seoTitle ?? cat.title} | ${SITE_NAME}`,
+      description,
       images: [LISTINGS_SOCIAL_IMAGE],
     },
   })
@@ -66,12 +109,14 @@ function buildFilterFromParams(
 }
 
 async function CategoryPropertyList({
+  categoria,
   baseFilter,
   searchParams,
   basePath,
   emptyTitle,
   emptyDescription,
 }: {
+  categoria: string
   baseFilter: PropertyFilter
   searchParams: Record<string, string | string[] | undefined>
   basePath: string
@@ -79,16 +124,13 @@ async function CategoryPropertyList({
   emptyDescription?: string
 }) {
   const filter = buildFilterFromParams(baseFilter, searchParams)
-  const rawPage = searchParams.page
-  const page =
-    typeof rawPage === 'string' && Number.isFinite(Number(rawPage))
-      ? Math.max(1, Math.floor(Number(rawPage)))
-      : 1
+  const page = parsePageParam(searchParams.page)
 
   const ordem = Array.isArray(searchParams.ordem) ? searchParams.ordem[0] : searchParams.ordem
   const order = ordem === 'preco_asc' || ordem === 'preco_desc' ? ordem : undefined
 
-  const paged = await getPropertiesPaged(filter, { page, limit: 12, order })
+  const paged = await getPropertiesPaged(filter, { page, limit: PAGE_SIZE, order })
+  const cat = CATEGORIES[categoria]
 
   return (
     <>
@@ -115,6 +157,23 @@ async function CategoryPropertyList({
         hasPrev={paged.hasPrev}
         hasNext={paged.hasNext}
       />
+
+      {!hasListingFilters(searchParams) && (
+        <JsonLd
+          data={buildGraph(
+            buildCollectionPageJsonLd({
+              path: basePath,
+              name: cat.seoTitle ?? cat.title,
+              description: cat.seoDescription ?? cat.description,
+            }),
+            buildItemListJsonLd(paged.items, {
+              path: basePath,
+              page: paged.page,
+              limit: PAGE_SIZE,
+            }),
+          )}
+        />
+      )}
     </>
   )
 }
@@ -152,6 +211,7 @@ export default async function CategoriaPage({ params, searchParams }: PageProps)
 
         <Suspense fallback={<PropertyGridSkeleton />}>
           <CategoryPropertyList
+            categoria={categoria}
             baseFilter={cat.filter}
             searchParams={search}
             basePath={`/imoveis/${categoria}`}

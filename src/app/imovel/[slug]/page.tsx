@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Container } from '@/components/layout/container'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
@@ -11,59 +12,137 @@ import { RelatedProperties } from '@/components/property/related-properties'
 import { ShareButtons } from '@/components/property/share-buttons'
 import { PurposeBadge, StatusBadge, OpportunityBadge } from '@/components/property/property-badge'
 import { getPropertyBySlug } from '@/data/services/properties'
-import { formatPrice, formatDateLong } from '@/lib/format'
-import { SITE_NAME } from '@/lib/constants'
+import { formatPrice, formatArea, formatDateLong } from '@/lib/format'
+import { SITE_NAME, PROPERTY_TYPE_LABEL } from '@/lib/constants'
 import { buildMetadata, getAbsoluteUrl } from '@/lib/metadata'
+import { JsonLd } from '@/components/shared/json-ld'
+import { buildGraph, buildPropertyJsonLd } from '@/lib/jsonld'
 
 interface PageProps {
   params: Promise<{ slug: string }>
 }
 
+/// O tipo do imóvel no banco e a categoria na URL têm nomes diferentes
+/// (`casa` → `/imoveis/casas`). Mapa explícito para os links internos não
+/// dependerem de pluralização automática.
+const CATEGORY_BY_TYPE: Record<string, string> = {
+  casa: 'casas',
+  apartamento: 'apartamentos',
+  terreno: 'terrenos',
+  rural: 'rural',
+  comercial: 'comercial',
+}
+
+const TYPE_PLURAL: Record<string, string> = {
+  casa: 'casas',
+  apartamento: 'apartamentos',
+  terreno: 'terrenos',
+  rural: 'áreas rurais',
+  comercial: 'imóveis comerciais',
+}
+
+/// Descrição usada no resultado de busca e nas prévias de link.
+///
+/// A descrição curta do cadastro sozinha rende trechos genéricos ("Casa em
+/// Corumbá."). Aqui ela é completada com os atributos que a pessoa realmente
+/// digitou na busca — quartos, área, bairro — dentro dos ~160 caracteres que o
+/// buscador exibe.
+function buildDescription(property: {
+  shortDescription: string
+  bedrooms?: number | null
+  bathrooms?: number | null
+  totalArea: number
+  builtArea?: number | null
+  neighborhood: string
+  city: string
+  purpose: string
+  type: string
+}): string {
+  const typeLabel = PROPERTY_TYPE_LABEL[property.type] ?? 'Imóvel'
+  const purposeLabel = property.purpose === 'venda' ? 'à venda' : 'para alugar'
+
+  const attributes = [
+    property.bedrooms ? `${property.bedrooms} quartos` : null,
+    property.bathrooms ? `${property.bathrooms} banheiros` : null,
+    formatArea(property.builtArea || property.totalArea),
+  ].filter(Boolean)
+
+  return `${typeLabel} ${purposeLabel} no bairro ${property.neighborhood}, ${property.city}-MS: ${attributes.join(', ')}. ${property.shortDescription} Fale direto com o corretor pelo WhatsApp.`.slice(
+    0,
+    300,
+  )
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const property = await getPropertyBySlug(slug)
-  if (!property) return {}
+  const property = await getPropertyBySlug(slug).catch(() => null)
+
+  /// Slug inexistente vira 404 na página; aqui só evitamos que o buscador
+  /// guarde o título genérico do layout para uma URL que não existe.
+  if (!property) {
+    return buildMetadata({
+      title: 'Imóvel não encontrado',
+      robots: { index: false, follow: true },
+    })
+  }
 
   const price = formatPrice(property.price)
-  const title = `${property.title} em ${property.city} | ${price}`
+  const typeLabel = PROPERTY_TYPE_LABEL[property.type] ?? 'Imóvel'
+  const purposeLabel = property.purpose === 'venda' ? 'à venda' : 'para alugar'
+
+  /// O title carrega tipo + finalidade + bairro + cidade + preço, que é a forma
+  /// como a busca local é digitada ("casa à venda no Centro Corumbá"). O nome do
+  /// site é acrescentado pelo template do layout.
+  /// `absolute`: o anúncio já gasta o espaço útil do title com tipo, bairro,
+  /// cidade e preço. Somar a marca no fim só empurraria o preço para além do
+  /// que o buscador exibe.
+  const title = {
+    absolute: `${typeLabel} ${purposeLabel} em ${property.neighborhood}, ${property.city}-MS — ${price}`,
+  }
   const url = `/imovel/${property.slug}`
-  const socialDescription = `${property.shortDescription} Veja fotos, caracteristicas e fale direto no WhatsApp para mais informacoes.`
-  const imageUrl = property.gallery?.[0]?.src || property.coverImage
-  const shouldIndex = property.status === 'disponivel' || property.status === 'reservado'
+  const description = buildDescription(property)
+  const cover = property.gallery?.[0]
+  const imageUrl = getAbsoluteUrl(cover?.src || property.coverImage)
+
+  /// Vendido/alugado sai do índice: manter um anúncio encerrado ranqueando gera
+  /// visita frustrada e sinal negativo. `follow` continua ligado para o robô
+  /// seguir daqui para os imóveis relacionados, que estão ativos.
+  const shouldIndex =
+    property.status === 'disponivel' || property.status === 'reservado'
 
   return buildMetadata({
     path: url,
     title,
-    description: socialDescription,
-    alternates: {
-      canonical: url,
-    },
-    robots: {
-      index: shouldIndex,
-      follow: true,
-      googleBot: {
-        index: shouldIndex,
-        follow: true,
-      },
-    },
+    description,
+    keywords: [
+      `${typeLabel} ${purposeLabel} ${property.city}`,
+      `imóvel ${property.neighborhood} ${property.city}`,
+      `${typeLabel} ${property.city} MS`,
+      ...property.tags,
+    ],
+    robots: shouldIndex ? undefined : { index: false, follow: true },
     openGraph: {
-      title: `${property.title} | ${price} | ${SITE_NAME}`,
-      description: socialDescription,
+      title: `${property.title} — ${price} | ${SITE_NAME}`,
+      description,
       url: getAbsoluteUrl(url),
-      type: 'website',
+      /// `article` em vez de `website`: dá ao anúncio data de publicação e de
+      /// alteração nas prévias, que é o que sinaliza anúncio recente.
+      type: 'article',
+      publishedTime: property.createdAt,
+      modifiedTime: property.updatedAt,
       images: [
         {
           url: imageUrl,
-          width: property.gallery?.[0]?.width || 1200,
-          height: property.gallery?.[0]?.height || 800,
-          alt: `${property.title} - ${property.neighborhood}, ${property.city}`,
+          width: cover?.width || 1200,
+          height: cover?.height || 800,
+          alt: `${property.title} — ${property.neighborhood}, ${property.city}-MS`,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${property.title} | ${price}`,
-      description: socialDescription,
+      title: `${property.title} — ${price}`,
+      description,
       images: [imageUrl],
     },
   })
@@ -158,11 +237,30 @@ export default async function ImovelPage({ params }: PageProps) {
             </div>
 
             <div className="mt-8 rounded-lg bg-cinza-50 p-4">
-              <h3 className="mb-1 text-sm font-semibold text-cinza-900">
+              <h2 className="mb-1 text-sm font-semibold text-cinza-900">
                 Localização
-              </h3>
+              </h2>
               <p className="text-sm text-cinza-600">
                 {property.neighborhood}, {property.city} — MS
+              </p>
+              {/* Links internos para a cidade e o tipo. Servem ao visitante que
+                  quer ver opções parecidas e, ao mesmo tempo, distribuem
+                  autoridade da página do imóvel para as páginas de catálogo,
+                  que são as que disputam as buscas genéricas da região. */}
+              <p className="mt-3 flex flex-wrap gap-x-2 gap-y-1 text-sm">
+                <Link
+                  href={`/imoveis/${property.citySlug}`}
+                  className="font-medium text-azul-escuro underline-offset-4 hover:underline"
+                >
+                  Ver todos os imóveis em {property.city}
+                </Link>
+                <span className="text-cinza-600">·</span>
+                <Link
+                  href={`/imoveis/${CATEGORY_BY_TYPE[property.type]}`}
+                  className="font-medium text-azul-escuro underline-offset-4 hover:underline"
+                >
+                  Ver mais {TYPE_PLURAL[property.type]}
+                </Link>
               </p>
             </div>
           </div>
@@ -173,38 +271,11 @@ export default async function ImovelPage({ params }: PageProps) {
         <RelatedProperties property={property} />
       </Container>
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'RealEstateListing',
-            name: property.title,
-            description: property.shortDescription,
-            url: url,
-            image: property.coverImage,
-            // `datePosted` é a propriedade que o schema.org define para anúncio
-            // imobiliário; o buscador usa para saber se a oferta é atual.
-            datePosted: property.createdAt,
-            dateModified: property.updatedAt,
-            offers: {
-              '@type': 'Offer',
-              price: property.price,
-              priceCurrency: 'BRL',
-              availability:
-                property.status === 'disponivel'
-                  ? 'https://schema.org/InStock'
-                  : 'https://schema.org/SoldOut',
-            },
-            address: {
-              '@type': 'PostalAddress',
-              addressLocality: property.city,
-              addressRegion: 'MS',
-              addressCountry: 'BR',
-            },
-          }),
-        }}
-      />
+      {/* Anúncio completo em dados estruturados: oferta, disponibilidade,
+          endereço, metragem, quartos, banheiros, comodidades e galeria. É o que
+          permite o buscador (e os assistentes de IA) responderem "casa de 3
+          quartos até R$ 300 mil em Corumbá" com este imóvel. */}
+      <JsonLd data={buildGraph(buildPropertyJsonLd(property))} />
     </section>
   )
 }
