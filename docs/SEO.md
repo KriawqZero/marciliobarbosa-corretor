@@ -97,8 +97,24 @@ curl -X POST https://marciliobarbosacorretor.com.br/api/indexnow \
   -H "Authorization: Bearer COLE_AQUI_A_API_PASSWORD"
 ```
 
-O valor é o da variável `API_PASSWORD` no Railway (ver seção 1). `401` quer
-dizer senha errada; `{"ok": true}` quer dizer aceito.
+O valor é o da variável `API_PASSWORD` no Railway (ver seção 1). Cole o valor
+literal entre aspas simples — **não** use `$API_PASSWORD`: essa sintaxe só
+funciona se a variável estiver exportada no seu terminal, e senão o shell troca
+por vazio antes do curl rodar, mandando `Bearer` sem senha nenhuma.
+
+Se der erro, a resposta diz qual dos casos é:
+
+| Resposta | O que fazer |
+|---|---|
+| `Falta o cabeçalho de autorização` | Faltou o `-H "Authorization: ..."` |
+| `O cabeçalho chegou sem senha depois de "Bearer"` | É o `$VAR` vazio — cole o valor literal |
+| `Senha incorreta` | Confira a `API_PASSWORD` no Railway |
+| `API_PASSWORD não está configurada no servidor` (503) | A variável não chegou ao runtime; defina e faça novo deploy |
+| `{"ok": true}` | Aceito |
+
+**Teste rápido, sem senha:** abra `/indexnow-key.txt` no navegador. Se mostrar a
+chave, as variáveis chegaram ao servidor. Se der 404, a `INDEXNOW_KEY` não está
+no runtime — normalmente falta um redeploy depois de adicionar as variáveis.
 
 A resposta traz `status`:
 
