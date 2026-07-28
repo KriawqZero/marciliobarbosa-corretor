@@ -1,23 +1,73 @@
 'use client'
 
-import { useState } from 'react'
+import { type TouchEvent, useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import type { PropertyImage } from '@/types'
+import { cn } from '@/lib/utils'
+import { GalleryThumbnails } from './gallery-thumbnails'
 
 interface PropertyGalleryProps {
   images: PropertyImage[]
   title: string
 }
 
-const THUMBNAIL_WINDOW = 2
+/** Deslocamento horizontal mínimo, em px, para o arrasto valer como troca de foto. */
+const SWIPE_THRESHOLD = 50
 
 export function PropertyGallery({ images, title }: PropertyGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0)
-  const [thumbStart, setThumbStart] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [isImageLoading, setIsImageLoading] = useState(true)
+  const [isMainLoading, setIsMainLoading] = useState(true)
+  const [isLightboxLoading, setIsLightboxLoading] = useState(true)
 
-  if (images.length === 0) {
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const swipedRef = useRef(false)
+
+  const total = images.length
+
+  // Navegação circular. Com uma foto só não há para onde ir — e reiniciar os
+  // spinners aqui deixaria o "carregando" preso, porque a imagem não recarrega.
+  const step = useCallback(
+    (delta: -1 | 1) => {
+      if (total <= 1) return
+      setActiveIndex((prev) => (prev + delta + total) % total)
+      setIsMainLoading(true)
+      setIsLightboxLoading(true)
+    },
+    [total]
+  )
+
+  const closeLightbox = useCallback(() => setLightboxOpen(false), [])
+
+  // Teclado: Esc fecha, setas navegam.
+  useEffect(() => {
+    if (!lightboxOpen) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setLightboxOpen(false)
+      } else if (event.key === 'ArrowLeft') {
+        step(-1)
+      } else if (event.key === 'ArrowRight') {
+        step(1)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [lightboxOpen, step])
+
+  // Trava a rolagem da página atrás do modo tela cheia.
+  useEffect(() => {
+    if (!lightboxOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [lightboxOpen])
+
+  if (total === 0) {
     return (
       <div className="flex aspect-video items-center justify-center rounded-xl bg-cinza-50">
         <p className="text-cinza-600">Sem imagens disponíveis</p>
@@ -26,68 +76,62 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
   }
 
   const activeImage = images[activeIndex]
+  const hasMultiple = total > 1
 
-  // Update the thumbnail window when the activeIndex moves outside it
-  // (do not let the window go out of range)
-  function updateThumbWindow(nextIndex: number) {
-    if (images.length <= THUMBNAIL_WINDOW) return
-    if (nextIndex < thumbStart) {
-      setThumbStart(nextIndex)
-    } else if (nextIndex >= thumbStart + THUMBNAIL_WINDOW) {
-      setThumbStart(nextIndex - THUMBNAIL_WINDOW + 1)
-    }
+  function openLightbox() {
+    setIsLightboxLoading(true)
+    setLightboxOpen(true)
   }
 
-  const handleSetActiveIndex = (i: number) => {
-    if (i !== activeIndex) {
-      setIsImageLoading(true)
-      setActiveIndex(i)
-      updateThumbWindow(i)
-    }
+  function selectIndex(index: number) {
+    if (index === activeIndex) return
+    setIsMainLoading(true)
+    setIsLightboxLoading(true)
+    setActiveIndex(index)
   }
 
-  // Make sure the thumbnail window scrolls properly when navigating outside
-  // If changing pictures (for example, via lightbox navigation), keep thumbnails in sync
-  const handlePrev = () => {
-    const nextIndex = (activeIndex - 1 + images.length) % images.length
-    setIsImageLoading(true)
-    setActiveIndex(nextIndex)
-    updateThumbWindow(nextIndex)
+  function handleTouchStart(event: TouchEvent) {
+    const touch = event.changedTouches[0]
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
   }
 
-  const handleNext = () => {
-    const nextIndex = (activeIndex + 1) % images.length
-    setIsImageLoading(true)
-    setActiveIndex(nextIndex)
-    updateThumbWindow(nextIndex)
+  function handleTouchEnd(event: TouchEvent) {
+    const start = touchStartRef.current
+    touchStartRef.current = null
+    if (!start) return
+
+    const touch = event.changedTouches[0]
+    const deltaX = touch.clientX - start.x
+    const deltaY = touch.clientY - start.y
+
+    // Só conta como swipe se o movimento for claramente horizontal; assim um
+    // arrasto vertical não troca a foto sem querer.
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaX) <= Math.abs(deltaY)) return
+
+    swipedRef.current = true
+    step(deltaX < 0 ? 1 : -1)
   }
 
-  let thumbnails = images
-  let showThumbNav = false
-  let thumbWindowStart = thumbStart
-
-  // If there are more than THUMBNAIL_WINDOW thumbnails, slice a window
-  if (images.length > THUMBNAIL_WINDOW) {
-    showThumbNav = true
-    // Ensure thumbStart is always a valid value
-    if (thumbStart > images.length - THUMBNAIL_WINDOW) {
-      thumbWindowStart = images.length - THUMBNAIL_WINDOW
+  // O clique no fundo fecha, mas o "click" que o navegador dispara ao final de
+  // um swipe não pode fechar junto.
+  function handleBackdropClick() {
+    if (swipedRef.current) {
+      swipedRef.current = false
+      return
     }
-    if (thumbStart < 0) {
-      thumbWindowStart = 0
-    }
-    thumbnails = images.slice(thumbWindowStart, thumbWindowStart + THUMBNAIL_WINDOW)
+    closeLightbox()
   }
 
   return (
     <>
       <div className="space-y-3">
         <button
-          onClick={() => setLightboxOpen(true)}
-          className="relative aspect-video w-full cursor-zoom-in overflow-hidden rounded-xl bg-cinza-100"
+          onClick={openLightbox}
+          className="relative aspect-video w-full cursor-zoom-in overflow-hidden rounded-xl bg-cinza-50"
+          aria-label={hasMultiple ? `Ampliar fotos (${total} no total)` : 'Ampliar foto'}
         >
-          {isImageLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-cinza-100/30">
+          {isMainLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-cinza-50/30">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-azul-escuro/20 border-t-azul-escuro"></div>
             </div>
           )}
@@ -96,86 +140,54 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
             alt={activeImage.alt || title}
             fill
             sizes="(max-width: 768px) 100vw, 70vw"
-            className={`object-cover transition-opacity duration-300 ${isImageLoading ? 'opacity-40' : 'opacity-100'}`}
+            className={cn(
+              'object-cover transition-opacity duration-300',
+              isMainLoading ? 'opacity-40' : 'opacity-100'
+            )}
             priority
-            onLoad={() => setIsImageLoading(false)}
+            onLoad={() => setIsMainLoading(false)}
           />
+
+          {hasMultiple && (
+            <span className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                <circle cx="12" cy="13" r="3" />
+              </svg>
+              {activeIndex + 1} / {total}
+            </span>
+          )}
         </button>
 
-        {images.length > 1 && (
-          <div className="flex items-center gap-2 pb-2">
-            {showThumbNav && (
-              <button
-                onClick={() => {
-                  const newStart = Math.max(thumbWindowStart - 1, 0)
-                  setThumbStart(newStart)
-                }}
-                disabled={thumbWindowStart === 0}
-                className={`h-8 w-8 flex items-center justify-center rounded-full bg-cinza-100 text-cinza-500 hover:bg-cinza-200 transition disabled:opacity-40 disabled:cursor-not-allowed mr-1`}
-                aria-label="Thumbnails anteriores"
-                tabIndex={-1}
-              >
-                <svg width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
-              </button>
-            )}
-            <div className="flex gap-2 overflow-hidden">
-              {thumbnails.map((img, i) => {
-                // The real image index in the images array
-                const realIndex = showThumbNav ? (thumbWindowStart + i) : i
-                return (
-                  <button
-                    key={realIndex}
-                    onClick={() => handleSetActiveIndex(realIndex)}
-                    className={`relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
-                      realIndex === activeIndex
-                        ? 'border-azul-escuro'
-                        : 'border-transparent opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    <Image
-                      src={img.src}
-                      alt={img.alt || `Foto ${realIndex + 1}`}
-                      fill
-                      sizes="96px"
-                      className="object-cover"
-                    />
-                  </button>
-                )
-              })}
-            </div>
-            {showThumbNav && (
-              <button
-                onClick={() => {
-                  const newStart = Math.min(
-                    thumbWindowStart + 1,
-                    images.length - THUMBNAIL_WINDOW
-                  )
-                  setThumbStart(newStart)
-                }}
-                disabled={thumbWindowStart >= images.length - THUMBNAIL_WINDOW}
-                className={`h-8 w-8 flex items-center justify-center rounded-full bg-cinza-100 text-cinza-500 hover:bg-cinza-200 transition disabled:opacity-40 disabled:cursor-not-allowed ml-1`}
-                aria-label="Thumbnails seguintes"
-                tabIndex={-1}
-              >
-                <svg width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-              </button>
-            )}
+        {hasMultiple && (
+          <div className="pb-2">
+            <GalleryThumbnails
+              images={images}
+              activeIndex={activeIndex}
+              onSelect={selectIndex}
+              variant="page"
+            />
           </div>
         )}
       </div>
 
       {lightboxOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
-          onClick={() => setLightboxOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Galeria de fotos: ${title}`}
+          className="fixed inset-0 z-[100] flex flex-col bg-black/95"
+          onClick={handleBackdropClick}
         >
+          {/* Escurece o topo para o X continuar legível sobre fotos claras. */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-black/70 to-transparent" />
+
           <button
-            onClick={() => setLightboxOpen(false)}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+            onClick={(e) => {
+              e.stopPropagation()
+              closeLightbox()
+            }}
+            className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-black/80"
             aria-label="Fechar"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -183,14 +195,14 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
             </svg>
           </button>
 
-          {images.length > 1 && (
+          {hasMultiple && (
             <>
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  handlePrev()
+                  step(-1)
                 }}
-                className="absolute left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                className="absolute left-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-black/80 sm:flex"
                 aria-label="Anterior"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -200,9 +212,9 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  handleNext()
+                  step(1)
                 }}
-                className="absolute right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                className="absolute right-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-black/80 sm:flex"
                 aria-label="Próxima"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -212,12 +224,14 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
             </>
           )}
 
+          {/* min-h-0 deixa a foto encolher para caber; a barra de baixo nunca a cobre. */}
           <div
-            className="relative flex max-h-[85vh] max-w-[90vw] items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
+            className="relative flex min-h-0 flex-1 items-center justify-center p-4"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
-            {isImageLoading && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-black/20">
+            {isLightboxLoading && (
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
                 <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white"></div>
               </div>
             )}
@@ -231,14 +245,58 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
               // maior do srcset.
               sizes="90vw"
               quality={85}
-              className={`max-h-[85vh] w-auto rounded-lg object-contain transition-opacity duration-300 ${isImageLoading ? 'opacity-40' : 'opacity-100'}`}
-              onLoad={() => setIsImageLoading(false)}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'max-h-full w-auto max-w-full rounded-lg object-contain transition-opacity duration-300',
+                isLightboxLoading ? 'opacity-40' : 'opacity-100'
+              )}
+              onLoad={() => setIsLightboxLoading(false)}
             />
           </div>
 
-          <div className="absolute bottom-4 text-sm text-white/70">
-            {activeIndex + 1} / {images.length}
-          </div>
+          {hasMultiple && (
+            <div
+              className="relative z-20 shrink-0 border-t border-white/10 bg-black/40 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* No celular a navegação vive aqui embaixo, longe da foto e na
+                  zona do polegar. No desktop ficam as setas laterais. */}
+              <div className="mb-3 flex items-center justify-center gap-6 sm:hidden">
+                <button
+                  onClick={() => step(-1)}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/25 transition active:bg-white/20"
+                  aria-label="Anterior"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                </button>
+                <span className="min-w-[4.5rem] text-center text-sm font-medium text-white">
+                  {activeIndex + 1} / {total}
+                </span>
+                <button
+                  onClick={() => step(1)}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/25 transition active:bg-white/20"
+                  aria-label="Próxima"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-3 hidden text-center text-sm text-white/70 sm:block">
+                {activeIndex + 1} / {total}
+              </div>
+
+              <GalleryThumbnails
+                images={images}
+                activeIndex={activeIndex}
+                onSelect={selectIndex}
+                variant="lightbox"
+              />
+            </div>
+          )}
         </div>
       )}
     </>
