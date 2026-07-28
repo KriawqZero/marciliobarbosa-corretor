@@ -3,33 +3,44 @@ import Image from 'next/image'
 import { Container } from '@/components/layout/container'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { CTASection } from '@/components/sections/cta-section'
+import { JsonLd } from '@/components/shared/json-ld'
+import { buildAboutPageJsonLd, buildGraph } from '@/lib/jsonld'
 import { BROKER_NAME, BROKER_CRECI } from '@/lib/constants'
 import { buildMetadata, DEFAULT_SOCIAL_IMAGE } from '@/lib/metadata'
 
 export const metadata: Metadata = buildMetadata({
   path: '/sobre',
-  title: `Sobre ${BROKER_NAME}`,
-  description: `Conheca ${BROKER_NAME}, corretor de imoveis em Corumba-MS e Ladario-MS. Experiencia local, atendimento personalizado e suporte completo na negociacao.`,
+  title: {
+    absolute: `Sobre ${BROKER_NAME} — Corretor de Imóveis em Corumbá-MS`,
+  },
+  description: `Conheça ${BROKER_NAME}, corretor de imóveis registrado (${BROKER_CRECI}) em Corumbá-MS e Ladário-MS. Experiência local, atendimento personalizado e apoio na documentação e no financiamento.`,
+  keywords: [
+    'corretor de imóveis Corumbá MS',
+    `${BROKER_NAME}`,
+    'corretor CRECI Corumbá',
+    'corretor de imóveis Ladário',
+  ],
   alternates: {
     canonical: '/sobre',
   },
   openGraph: {
-    title: `Sobre ${BROKER_NAME} | Corretor de imoveis`,
+    title: `Sobre ${BROKER_NAME} — Corretor de imóveis em Corumbá e Ladário`,
     description:
-      'Atendimento imobiliario com foco em Corumba e Ladario, com transparencia, agilidade e conhecimento da regiao.',
+      'Atendimento imobiliário com foco em Corumbá e Ladário: transparência, agilidade e conhecimento da região.',
+    type: 'profile',
     images: [
       {
         url: DEFAULT_SOCIAL_IMAGE,
         width: 1200,
         height: 1200,
-        alt: `Foto de ${BROKER_NAME}`,
+        alt: `Foto de ${BROKER_NAME}, corretor de imóveis em Corumbá-MS`,
       },
     ],
   },
   twitter: {
-    title: `Sobre ${BROKER_NAME} | Corretor de imoveis`,
+    title: `Sobre ${BROKER_NAME} — Corretor de imóveis`,
     description:
-      'Conheca o corretor e o trabalho imobiliario em Corumba e Ladario.',
+      'Conheça o corretor e o trabalho imobiliário em Corumbá e Ladário.',
     images: [DEFAULT_SOCIAL_IMAGE],
   },
 })
@@ -46,7 +57,7 @@ export default function SobrePage() {
               <div className="relative mb-4 h-32 w-32 flex-shrink-0 overflow-hidden rounded-full bg-azul-escuro sm:mb-0">
                 <Image
                   src="/marcilio.jpg"
-                  alt={BROKER_NAME}
+                  alt={`${BROKER_NAME}, corretor de imóveis em Corumbá-MS e Ladário-MS`}
                   fill
                   sizes="(max-width: 768px) 100vw, 128px"
                   className="object-cover"
@@ -118,6 +129,11 @@ export default function SobrePage() {
         </Container>
       </section>
       <CTASection />
+
+      {/* Liga a pessoa (o corretor) à entidade de negócio declarada no layout.
+          É o par que faz o buscador entender "Marcilio Barbosa" como um
+          profissional real com registro, e não como uma marca genérica. */}
+      <JsonLd data={buildGraph(buildAboutPageJsonLd())} />
     </>
   )
 }

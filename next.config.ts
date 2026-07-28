@@ -23,6 +23,24 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2560],
     imageSizes: [96, 128, 256, 384],
   },
+  // Header de servidor não acrescenta nada e expõe a stack.
+  poweredByHeader: false,
+  // Barra no fim da URL gera duas URLs para a mesma página (`/imoveis` e
+  // `/imoveis/`). Fixar a forma sem barra e redirecionar a outra evita que o
+  // buscador trate as duas como conteúdo duplicado.
+  trailingSlash: false,
+  async headers() {
+    return [
+      {
+        // A API já está bloqueada no robots.txt, mas robots.txt só impede o
+        // rastreamento — uma URL de API linkada de fora ainda podia ser
+        // indexada sem ser lida. `X-Robots-Tag` é a instrução que remove de
+        // vez, porque viaja na própria resposta.
+        source: '/api/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+    ]
+  },
 }
 
 export default nextConfig

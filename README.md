@@ -70,6 +70,19 @@ pnpm dev
 ```
 Acesse `http://localhost:3000`.
 
+## SEO e indexação
+
+O site é otimizado para busca local em Corumbá-MS e Ladário-MS: dados
+estruturados (JSON-LD) de corretor e de anúncio imobiliário, sitemap com
+sitemap de imagens, feed RSS, controle de canônicas e paginação, e notificação
+automática ao IndexNow (Bing/DuckDuckGo/Yandex) a cada imóvel cadastrado ou
+editado.
+
+Consulte **[`docs/SEO.md`](docs/SEO.md)** para: variáveis de ambiente
+necessárias, cadastro no Search Console e no Bing Webmaster Tools, e a lista de
+informações que ainda precisam ser preenchidas (endereço, redes sociais,
+horário de atendimento) para o negócio aparecer no mapa do Google.
+
 ## Aprendizados
 
 O maior desafio (e acerto) deste projeto foi resistir à tentação de adotar o modelo SPA completo ou frameworks muito abstratos de CMS. Manter a renderização no servidor (SSR) simplificou imensamente a entrega de metadados dinâmicos para SEO e WhatsApp (Open Graph). A separação rígida entre a camada de apresentação (`components`) e a camada de acesso a dados (`services`) tem se provado essencial para permitir que o painel administrativo e o site público consumam a mesma lógica sem duplicação ou gargalos de segurança.

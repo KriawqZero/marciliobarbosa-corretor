@@ -2,12 +2,30 @@ import type { Metadata } from 'next'
 import { Container } from '@/components/layout/container'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { ContactSection } from '@/components/shared/contact-section'
-import { BROKER_NAME } from '@/lib/constants'
+import { JsonLd } from '@/components/shared/json-ld'
+import { buildContactPageJsonLd, buildGraph } from '@/lib/jsonld'
+import { BROKER_NAME, BROKER_PHONE_DISPLAY } from '@/lib/constants'
+import { buildMetadata } from '@/lib/metadata'
 
-export const metadata: Metadata = {
-  title: 'Entre em Contato',
-  description: `Entre em contato com ${BROKER_NAME}, corretor de imóveis em Corumbá e Ladário. Atendimento via WhatsApp, telefone e e-mail.`,
-}
+/// Era a única página sem canônica, sem imagem social e fora do `buildMetadata`
+/// — ou seja, sem as diretivas de robots do resto do site. Compartilhada no
+/// WhatsApp, aparecia sem foto nenhuma.
+export const metadata: Metadata = buildMetadata({
+  path: '/contato',
+  title: {
+    absolute: `Contato — ${BROKER_NAME}, Corretor em Corumbá-MS`,
+  },
+  description: `Fale com ${BROKER_NAME}, corretor de imóveis em Corumbá-MS e Ladário-MS. Atendimento por WhatsApp ${BROKER_PHONE_DISPLAY}, telefone e e-mail.`,
+  keywords: [
+    'contato corretor de imóveis Corumbá',
+    'telefone corretor Corumbá MS',
+    'WhatsApp corretor Corumbá',
+    'corretor Ladário MS contato',
+  ],
+  alternates: {
+    canonical: '/contato',
+  },
+})
 
 export default function ContatoPage() {
   return (
@@ -88,6 +106,8 @@ export default function ContatoPage() {
           </div>
         </div>
       </Container>
+
+      <JsonLd data={buildGraph(buildContactPageJsonLd())} />
     </section>
   )
 }
