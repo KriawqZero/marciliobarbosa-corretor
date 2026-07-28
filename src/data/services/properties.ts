@@ -1,6 +1,7 @@
 'use server';
+import { unstable_cache } from 'next/cache'
 import type { Property, PropertyFilter, CategoryMeta, PaginatedProperties } from '@/types'
-import { CATEGORIES } from '@/lib/constants'
+import { CATEGORIES, PROPERTIES_CACHE_TAG } from '@/lib/constants'
 import { env } from 'process'
 import { PrismaClient } from '@/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
@@ -146,69 +147,113 @@ function buildPrismaWhere(filter?: PropertyFilter) {
   return where
 }
 
+/// Todas as leituras públicas do catálogo passam pelo cache de dados do Next.
+///
+/// As páginas continuam `force-dynamic` (ver comentário na home sobre o build
+/// sem banco), mas cada visita fazia todas as consultas de novo mesmo sem nada
+/// ter mudado — e imóvel muda poucas vezes por semana, não por requisição. Com
+/// o cache, o banco só é consultado quando uma entrada expira ou é invalidada.
+///
+/// A tag única cobre o catálogo inteiro: qualquer escrita derruba todas as
+/// entradas de uma vez via `revalidateTag` em `revalidatePropertyRoutes`. O
+/// `revalidate` de 10 minutos é rede de segurança para mudanças feitas fora do
+/// app (direto no banco), que não passam pelo fluxo de revalidação.
+///
+/// Os argumentos de cada função entram na chave do cache automaticamente, por
+/// isso filtros e paginação diferentes não se misturam.
+const CACHE_OPTIONS = { tags: [PROPERTIES_CACHE_TAG], revalidate: 600 }
+
+const getPropertiesCached = unstable_cache(
+  async (filter?: PropertyFilter) => {
+    const where = buildPrismaWhere(filter)
+    const properties = await prisma!.property.findMany({
+      where,
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+      },
+      orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
+    })
+
+    return properties.map(serializeProperty)
+  },
+  ['properties-list'],
+  CACHE_OPTIONS,
+)
+
 export async function getProperties(
   filter?: PropertyFilter,
 ): Promise<Property[]> {
   if (!prisma) return Promise.reject(new Error('Database not configured'))
-
-  const where = buildPrismaWhere(filter)
-  const properties = await prisma.property.findMany({
-    where,
-    include: {
-      images: { orderBy: { sortOrder: 'asc' } },
-    },
-    orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-  })
-
-  return properties.map(serializeProperty)
+  return getPropertiesCached(filter)
 }
+
+const getPropertyBySlugCached = unstable_cache(
+  async (slug: string) => {
+    const property = await prisma!.property.findFirst({
+      where: { slug },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+      },
+    })
+
+    if (!property) return null
+    return serializeProperty(property)
+  },
+  ['property-by-slug'],
+  CACHE_OPTIONS,
+)
 
 export async function getPropertyBySlug(
   slug: string,
 ): Promise<Property | null> {
   if (!prisma) return Promise.reject(new Error('Database not configured'))
-
-  const property = await prisma.property.findFirst({
-    where: { slug },
-    include: {
-      images: { orderBy: { sortOrder: 'asc' } },
-    },
-  })
-
-  if (!property) return null
-  return serializeProperty(property)
+  return getPropertyBySlugCached(slug)
 }
+
+const getFeaturedPropertiesCached = unstable_cache(
+  async () => {
+    const properties = await prisma!.property.findMany({
+      where: { featured: true, status: PropertyStatus.disponivel },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+      take: 50,
+    })
+
+    return properties.map(serializeProperty)
+  },
+  ['featured-properties'],
+  CACHE_OPTIONS,
+)
 
 export async function getFeaturedProperties(): Promise<Property[]> {
   if (!prisma) return Promise.reject(new Error('Database not configured'))
-
-  const properties = await prisma.property.findMany({
-    where: { featured: true, status: PropertyStatus.disponivel },
-    include: {
-      images: { orderBy: { sortOrder: 'asc' } },
-    },
-    orderBy: [{ createdAt: 'desc' }],
-    take: 50,
-  })
-
-  return properties.map(serializeProperty)
+  return getFeaturedPropertiesCached()
 }
+
+const getRecentPropertiesCached = unstable_cache(
+  async (limit: number) => {
+    const properties = await prisma!.property.findMany({
+      where: { status: PropertyStatus.disponivel },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+      take: limit,
+    })
+
+    return properties.map(serializeProperty)
+  },
+  ['recent-properties'],
+  CACHE_OPTIONS,
+)
 
 /// Imóveis mais recentes disponíveis. Substitui o conceito de "destaque" na home:
 /// não depende de ninguém lembrar de marcar nada no app.
 export async function getRecentProperties(limit = 6): Promise<Property[]> {
   if (!prisma) return Promise.reject(new Error('Database not configured'))
-
-  const properties = await prisma.property.findMany({
-    where: { status: PropertyStatus.disponivel },
-    include: {
-      images: { orderBy: { sortOrder: 'asc' } },
-    },
-    orderBy: [{ createdAt: 'desc' }],
-    take: limit,
-  })
-
-  return properties.map(serializeProperty)
+  return getRecentPropertiesCached(limit)
 }
 
 export interface CatalogCounts {
@@ -217,67 +262,113 @@ export interface CatalogCounts {
   byCity: Record<string, number>
 }
 
+const getCatalogCountsCached = unstable_cache(
+  async () => {
+    const where = { status: PropertyStatus.disponivel }
+
+    const [total, byTypeRows, byCityRows] = await Promise.all([
+      prisma!.property.count({ where }),
+      prisma!.property.groupBy({ by: ['type'], where, _count: { _all: true } }),
+      prisma!.property.groupBy({
+        by: ['citySlug'],
+        where,
+        _count: { _all: true },
+      }),
+    ])
+
+    const byType: Record<string, number> = {}
+    for (const row of byTypeRows) byType[row.type] = row._count._all
+
+    const byCity: Record<string, number> = {}
+    for (const row of byCityRows) byCity[row.citySlug] = row._count._all
+
+    return { total, byType, byCity }
+  },
+  ['catalog-counts'],
+  CACHE_OPTIONS,
+)
+
 /// Contagens reais do catálogo, para a home não prometer o que não existe.
 export async function getCatalogCounts(): Promise<CatalogCounts> {
   if (!prisma) return Promise.reject(new Error('Database not configured'))
-
-  const where = { status: PropertyStatus.disponivel }
-
-  const [total, byTypeRows, byCityRows] = await Promise.all([
-    prisma.property.count({ where }),
-    prisma.property.groupBy({ by: ['type'], where, _count: { _all: true } }),
-    prisma.property.groupBy({ by: ['citySlug'], where, _count: { _all: true } }),
-  ])
-
-  const byType: Record<string, number> = {}
-  for (const row of byTypeRows) byType[row.type] = row._count._all
-
-  const byCity: Record<string, number> = {}
-  for (const row of byCityRows) byCity[row.citySlug] = row._count._all
-
-  return { total, byType, byCity }
+  return getCatalogCountsCached()
 }
+
+const getSpecialOpportunitiesCached = unstable_cache(
+  async () => {
+    const properties = await prisma!.property.findMany({
+      where: { specialOpportunity: true, status: PropertyStatus.disponivel },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+      take: 50,
+    })
+
+    return properties.map(serializeProperty)
+  },
+  ['special-opportunities'],
+  CACHE_OPTIONS,
+)
 
 export async function getSpecialOpportunities(): Promise<Property[]> {
   if (!prisma) return Promise.reject(new Error('Database not configured'))
-
-  const properties = await prisma.property.findMany({
-    where: { specialOpportunity: true, status: PropertyStatus.disponivel },
-    include: {
-      images: { orderBy: { sortOrder: 'asc' } },
-    },
-    orderBy: [{ createdAt: 'desc' }],
-    take: 50,
-  })
-
-  return properties.map(serializeProperty)
+  return getSpecialOpportunitiesCached()
 }
+
+/// Recebe só os campos que entram na consulta — não o `Property` inteiro —
+/// para a chave do cache ficar pequena e estável.
+const getRelatedPropertiesCached = unstable_cache(
+  async (
+    id: string,
+    citySlug: Property['citySlug'],
+    type: Property['type'],
+    limit: number,
+  ) => {
+    const related = await prisma!.property.findMany({
+      where: {
+        id: { not: id },
+        status: PropertyStatus.disponivel,
+        OR: [{ citySlug }, { type: type as PropertyType }],
+      },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+      take: limit,
+    })
+
+    return related.map(serializeProperty)
+  },
+  ['related-properties'],
+  CACHE_OPTIONS,
+)
 
 export async function getRelatedProperties(
   property: Property,
   limit = 3,
 ): Promise<Property[]> {
   if (!prisma) return Promise.reject(new Error('Database not configured'))
-
-  const related = await prisma.property.findMany({
-    where: {
-      id: { not: property.id },
-      status: PropertyStatus.disponivel,
-      OR: [{ citySlug: property.citySlug }, { type: property.type }],
-    },
-    include: {
-      images: { orderBy: { sortOrder: 'asc' } },
-    },
-    orderBy: [{ createdAt: 'desc' }],
-    take: limit,
-  })
-
-  return related.map(serializeProperty)
+  return getRelatedPropertiesCached(
+    property.id,
+    property.citySlug,
+    property.type,
+    limit,
+  )
 }
 
 export async function getPropertyCategories(): Promise<CategoryMeta[]> {
   return Object.values(CATEGORIES)
 }
+
+const getPropertiesCountCached = unstable_cache(
+  async (filter?: PropertyFilter) => {
+    const where = buildPrismaWhere(filter)
+    return prisma!.property.count({ where })
+  },
+  ['properties-count'],
+  CACHE_OPTIONS,
+)
 
 export async function getPropertiesCount(
   filter?: PropertyFilter,
@@ -287,9 +378,40 @@ export async function getPropertiesCount(
     return props.length
   }
 
-  const where = buildPrismaWhere(filter)
-  return prisma.property.count({ where })
+  return getPropertiesCountCached(filter)
 }
+
+const getPropertiesPagedCached = unstable_cache(
+  async (
+    filter: PropertyFilter | undefined,
+    page: number,
+    limit: number,
+    order?: 'preco_asc' | 'preco_desc',
+  ) => {
+    const where = buildPrismaWhere(filter)
+    const [total, properties] = await Promise.all([
+      prisma!.property.count({ where }),
+      prisma!.property.findMany({
+        where,
+        include: {
+          images: { orderBy: { sortOrder: 'asc' } },
+        },
+        orderBy:
+          order === 'preco_asc'
+            ? [{ price: 'asc' }]
+            : order === 'preco_desc'
+              ? [{ price: 'desc' }]
+              : [{ featured: 'desc' }, { createdAt: 'desc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ])
+
+    return { total, items: properties.map(serializeProperty) }
+  },
+  ['properties-paged'],
+  CACHE_OPTIONS,
+)
 
 export async function getPropertiesPaged(
   filter: PropertyFilter | undefined,
@@ -303,32 +425,20 @@ export async function getPropertiesPaged(
   const limit = options?.limit && options.limit > 0 ? options.limit : 12
 
   if (!prisma) return Promise.reject(new Error('Database not configured'))
-  
-  const where = buildPrismaWhere(filter)
-  const [total, properties] = await Promise.all([
-    prisma.property.count({ where }),
-    prisma.property.findMany({
-      where,
-      include: {
-        images: { orderBy: { sortOrder: 'asc' } },
-      },
-      orderBy:
-        options?.order === 'preco_asc'
-          ? [{ price: 'asc' }]
-          : options?.order === 'preco_desc'
-            ? [{ price: 'desc' }]
-            : [{ featured: 'desc' }, { createdAt: 'desc' }],
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-  ])
+
+  const { total, items } = await getPropertiesPagedCached(
+    filter,
+    page,
+    limit,
+    options?.order,
+  )
 
   const pages = Math.ceil(total / limit)
   const hasPrev = page > 1
   const hasNext = page < pages
 
   return {
-    items: properties.map(serializeProperty),
+    items,
     page,
     limit,
     total,
