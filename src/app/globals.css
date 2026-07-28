@@ -53,6 +53,16 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
   z-index: 0;
   overflow: hidden;
+  /* O iframe pinta um retângulo preto enquanto carrega e mostra o anel de
+     "carregando" do YouTube por cima do texto. Só revelamos quando o player
+     confirma que está tocando (ver hero-video-background.tsx); até lá, quem
+     aparece é o gradiente do hero. */
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+
+.hero-youtube-bg[data-playing='true'] {
+  opacity: 1;
 }
 
 .hero-youtube-iframe {
@@ -76,8 +86,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .hero-youtube-iframe-portrait {
-  /* Shorts são verticais: aumenta o crop para preencher sem “letterbox” */
-  transform: translate(-50%, -50%) scale(1.62);
+  /* O embed de Shorts desenha os próprios controles (anterior/pausar/próximo)
+     no centro do player e ignora `controls=0`. Deslocamos o centro do iframe
+     para logo abaixo do hero e ampliamos o bastante para ainda cobrir tudo:
+     assim os controles caem fora da área visível (a section tem overflow
+     hidden). Em 412px de largura o render fica ~1070px, dentro da resolução
+     do Short — não perde nitidez. */
+  transform: translate(-50%, 15%) scale(2.6);
 }
 
 .hero-youtube-overlay {
@@ -95,18 +110,10 @@ h1, h2, h3, h4, h5, h6 {
   pointer-events: none;
 }
 
+/* Camada base do hero: sempre visível. O vídeo, quando toca, aparece por cima
+   dela. Se não tocar, é isto que o visitante vê — de propósito. */
 .hero-youtube-fallback {
   z-index: 0;
   display: block;
   pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-youtube-bg {
-    display: none;
-  }
-
-  .hero-youtube-fallback {
-    display: block;
-  }
 }

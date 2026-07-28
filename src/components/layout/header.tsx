@@ -47,10 +47,12 @@ export function Header() {
           <Image
             src="/LogoMarcilioBarbosaCorretor/SmboloFundoTransparente.svg"
             alt="Marcilio Barbosa Corretor"
-            width={48}
-            height={48}
+            // Dimensões intrínsecas do SVG (viewBox 348.88x235.9). Declarar 48x48
+            // num símbolo que não é quadrado reserva a caixa errada.
+            width={349}
+            height={236}
             priority
-            className="h-9 w-9 shrink-0 object-contain md:hidden"
+            className="h-9 w-auto shrink-0 object-contain md:hidden"
           />
           <Image
             src={
@@ -59,8 +61,8 @@ export function Header() {
                 : '/LogoMarcilioBarbosaCorretor/Logo%20Marcilio%20Barbosa%20(3).svg'
             }
             alt="Marcilio Barbosa Corretor"
-            width={180}
-            height={32}
+            width={878}
+            height={153}
             priority
             className="hidden h-8 w-auto sm:h-9 md:block"
           />

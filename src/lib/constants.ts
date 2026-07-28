@@ -4,6 +4,8 @@ export const SITE_NAME = 'Corretor Marcilio Barbosa'
 export const BROKER_NAME = 'Corretor Marcilio Barbosa'
 export const BROKER_PHONE = '5567996294660'
 export const BROKER_PHONE_DISPLAY = '(67) 99629-4660'
+/// Formato E.164 para `tel:`. Derivar de BROKER_PHONE_DISPLAY perde o DDI 55.
+export const BROKER_PHONE_TEL = `+${BROKER_PHONE}`
 export const BROKER_EMAIL = 'barbosasmarcilio@gmail.com'
 export const BROKER_CRECI = 'CRECI/MS 17.159'
 

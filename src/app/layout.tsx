@@ -26,11 +26,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
   },
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
-  },
+  // Ícones vêm de `src/app/icon.png` e `src/app/apple-icon.png` (convenção do App
+  // Router): o Next injeta as tags com URL versionada e cache longo.
   other: {
     'geo.region': 'BR-MS',
     'geo.placename': 'Corumbá',

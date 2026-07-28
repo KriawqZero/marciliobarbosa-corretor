@@ -127,8 +127,9 @@ async function generateUniqueSlug(baseSlug: string): Promise<string> {
 
 const DEFAULT_NEIGHBORHOOD = 'A definir'
 const DEFAULT_TOTAL_AREA = 1
-const DEFAULT_COVER_IMAGE_URL =
-  'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&h=800&fit=crop&q=80'
+/// Placeholder local. Nunca usar foto de banco de imagens como capa: o visitante
+/// veria uma casa genérica ilustrando um imóvel real.
+const DEFAULT_COVER_IMAGE_URL = '/placeholder-imovel.svg'
 
 function buildShortDescription({
   title,

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Container } from './container'
 import {
   BROKER_PHONE_DISPLAY,
+  BROKER_PHONE_TEL,
   BROKER_EMAIL,
   BROKER_CRECI,
   SITE_NAME,
@@ -17,8 +18,11 @@ export function Footer() {
           <Image
             src="/LogoMarcilioBarbosaCorretor/Logo%20Marcilio%20Barbosa%20(1).svg"
             alt="Marcilio Barbosa Corretor"
-            width={220}
-            height={40}
+            // Dimensões intrínsecas do SVG (viewBox 878.28x152.97). Com 220x40 o
+            // navegador reservava uma caixa de proporção errada e a largura
+            // mudava quando o arquivo chegava.
+            width={878}
+            height={153}
             className="mb-4 h-10 w-auto"
           />
           <p className="mb-2 text-sm text-white/70">
@@ -98,7 +102,7 @@ export function Footer() {
           </h4>
           <div className="flex flex-col gap-2">
             <a
-              href={`tel:+${BROKER_PHONE_DISPLAY.replace(/\D/g, '')}`}
+              href={`tel:${BROKER_PHONE_TEL}`}
               className="text-sm text-white/70 transition-colors hover:text-white"
             >
               {BROKER_PHONE_DISPLAY}

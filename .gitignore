@@ -25,6 +25,11 @@ backups/
 .DS_Store
 *.pem
 
+# arquivos-fonte da marca (.ai, .eps, PNG/JPG de alta) — não são servidos pelo
+# site; ficam aqui só para uso do designer. Em `public/` iam parar na imagem de
+# deploy sem nunca serem requisitados.
+/brand/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

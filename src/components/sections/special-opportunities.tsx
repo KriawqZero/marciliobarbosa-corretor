@@ -5,11 +5,13 @@ import { SectionHeading } from '@/components/shared/section-heading'
 import { WhatsAppButton } from '@/components/shared/whatsapp-button'
 import { OpportunityBadge } from '@/components/property/property-badge'
 import { PropertyPrice } from '@/components/property/property-price'
-import { getSpecialOpportunities } from '@/data/services/properties'
+import type { Property } from '@/types'
 
-export async function SpecialOpportunities() {
-  const opportunities = await getSpecialOpportunities()
-
+export function SpecialOpportunities({
+  opportunities,
+}: {
+  opportunities: Property[]
+}) {
   if (opportunities.length === 0) return null
 
   return (

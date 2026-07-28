@@ -2,11 +2,9 @@ import { Container } from '@/components/layout/container'
 import { SectionHeading } from '@/components/shared/section-heading'
 import { PropertyCard } from '@/components/property/property-card'
 import { Button } from '@/components/ui/button'
-import { getFeaturedProperties } from '@/data/services/properties'
+import type { Property } from '@/types'
 
-export async function FeaturedProperties() {
-  const properties = await getFeaturedProperties()
-
+export function FeaturedProperties({ properties }: { properties: Property[] }) {
   if (properties.length === 0) return null
 
   return (
@@ -17,8 +15,12 @@ export async function FeaturedProperties() {
           subtitle="As melhores opções selecionadas para você"
         />
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {properties.slice(0, 6).map((property) => (
-            <PropertyCard key={property.id} property={property} />
+          {properties.slice(0, 6).map((property, index) => (
+            <PropertyCard
+              key={property.id}
+              property={property}
+              priority={index === 0}
+            />
           ))}
         </div>
         <div className="mt-10 text-center">

@@ -6,6 +6,9 @@ import { PurposeBadge, OpportunityBadge } from './property-badge'
 
 interface PropertyCardProps {
   property: Property
+  /// O primeiro card de uma grade costuma ser o elemento LCP. Sem isto ele entra
+  /// como `lazy` e só é descoberto depois do layout.
+  priority?: boolean
 }
 
 function BedIcon() {
@@ -34,7 +37,7 @@ function AreaIcon() {
   )
 }
 
-export function PropertyCard({ property }: PropertyCardProps) {
+export function PropertyCard({ property, priority = false }: PropertyCardProps) {
   return (
     <Link
       href={`/imovel/${property.slug}`}
@@ -45,8 +48,11 @@ export function PropertyCard({ property }: PropertyCardProps) {
           src={property.coverImage}
           alt={property.title}
           fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
+          priority={priority}
+          fetchPriority={priority ? 'high' : 'auto'}
+          loading={priority ? 'eager' : 'lazy'}
         />
         <div className="absolute left-3 top-3 flex gap-2">
           <PurposeBadge purpose={property.purpose} />

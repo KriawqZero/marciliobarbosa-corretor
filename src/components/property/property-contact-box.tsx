@@ -1,4 +1,8 @@
-import { BROKER_NAME, BROKER_PHONE_DISPLAY } from '@/lib/constants'
+import {
+  BROKER_NAME,
+  BROKER_PHONE_DISPLAY,
+  BROKER_PHONE_TEL,
+} from '@/lib/constants'
 import { WhatsAppButton } from '@/components/shared/whatsapp-button'
 import Image from 'next/image'
 
@@ -13,19 +17,15 @@ export function PropertyContactBox({ whatsappMessage }: PropertyContactBoxProps)
       <div className="hidden lg:block">
         <div className="sticky top-24 rounded-xl border border-cinza-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-3">
-            {/*<div className="flex h-12 w-12 items-center justify-center rounded-full bg-azul-escuro text-lg font-bold text-white">
-              MB
-            </div>*/}
-              <div className="relative mb-4 h-18 w-18 flex-shrink-0 overflow-hidden rounded-full bg-azul-escuro sm:mb-0">
-                <Image
-                  src="/marcilio.jpg"
-                  alt={BROKER_NAME}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 128px"
-                  className="object-cover"
-                  priority
-                />
-              </div>
+            <div className="relative h-18 w-18 flex-shrink-0 overflow-hidden rounded-full bg-azul-escuro">
+              <Image
+                src="/marcilio.jpg"
+                alt={BROKER_NAME}
+                fill
+                sizes="72px"
+                className="object-cover"
+              />
+            </div>
             <div>
               <p className="font-semibold text-cinza-900">{BROKER_NAME}</p>
               <p className="text-sm text-cinza-600">Corretor de Imóveis</p>
@@ -35,7 +35,7 @@ export function PropertyContactBox({ whatsappMessage }: PropertyContactBoxProps)
           <WhatsAppButton message={whatsappMessage} className="w-full" />
 
           <a
-            href={`tel:+${BROKER_PHONE_DISPLAY.replace(/\D/g, '')}`}
+            href={`tel:${BROKER_PHONE_TEL}`}
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-azul-escuro px-6 py-3 text-base font-semibold text-azul-escuro transition-colors hover:bg-azul-escuro hover:text-white"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

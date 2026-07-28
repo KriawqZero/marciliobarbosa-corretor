@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { HeroSection } from '@/components/sections/hero-section'
 import { CategoryCards } from '@/components/sections/category-cards'
 import { FeaturedProperties } from '@/components/sections/featured-properties'
@@ -6,6 +8,11 @@ import { CitySection } from '@/components/sections/city-section'
 import { InstitutionalSection } from '@/components/sections/institutional-section'
 import { CTASection } from '@/components/sections/cta-section'
 import { buildMetadata, DEFAULT_SOCIAL_IMAGE } from '@/lib/metadata'
+import {
+  getFeaturedProperties,
+  getSpecialOpportunities,
+  getPropertiesCount,
+} from '@/data/services/properties'
 import {
   BROKER_NAME,
   BROKER_PHONE_DISPLAY,
@@ -16,7 +23,7 @@ import {
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export const metadata = buildMetadata({
+export const metadata: Metadata = buildMetadata({
   path: '/',
   title: `${SITE_NAME} — Imoveis em Corumba e Ladario`,
   description:
@@ -45,17 +52,47 @@ export const metadata = buildMetadata({
   },
 })
 
+// Carregadores: buscam os dados e entregam para os componentes de apresentação,
+// que permanecem puros. Ficam atrás de `Suspense` para que o hero — que é
+// estático — não espere por banco nenhum.
+async function FeaturedPropertiesSlot() {
+  const properties = await getFeaturedProperties()
+  return <FeaturedProperties properties={properties} />
+}
+
+async function SpecialOpportunitiesSlot() {
+  const opportunities = await getSpecialOpportunities()
+  return <SpecialOpportunities opportunities={opportunities} />
+}
+
+async function CitySlot() {
+  const [corumbaCount, ladarioCount] = await Promise.all([
+    getPropertiesCount({ citySlug: 'corumba' }),
+    getPropertiesCount({ citySlug: 'ladario' }),
+  ])
+  return <CitySection corumbaCount={corumbaCount} ladarioCount={ladarioCount} />
+}
+
 export default function Home() {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL || 'https://marciliobarbosacorretor.com.br'
 
   return (
     <>
+      {/* Hero e categorias não dependem de dados: renderizam no primeiro paint
+          e nunca se movem. Era a troca do esqueleto de página inteira pelo
+          conteúdo real que gerava o CLS de 0,172 (medido). */}
       <HeroSection />
       <CategoryCards />
-      <FeaturedProperties />
-      <SpecialOpportunities />
-      <CitySection />
+      <Suspense fallback={null}>
+        <FeaturedPropertiesSlot />
+      </Suspense>
+      <Suspense fallback={null}>
+        <SpecialOpportunitiesSlot />
+      </Suspense>
+      <Suspense fallback={null}>
+        <CitySlot />
+      </Suspense>
       <InstitutionalSection />
       <CTASection />
 

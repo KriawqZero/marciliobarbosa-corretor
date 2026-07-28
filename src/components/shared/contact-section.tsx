@@ -1,6 +1,7 @@
 import {
   BROKER_NAME,
   BROKER_PHONE_DISPLAY,
+  BROKER_PHONE_TEL,
   BROKER_EMAIL,
 } from '@/lib/constants'
 import { WhatsAppButton } from './whatsapp-button'
@@ -30,7 +31,7 @@ export function ContactSection() {
         <h3 className="mb-1 font-semibold text-cinza-900">Telefone</h3>
         <p className="mb-3 text-sm text-cinza-600">Ligue diretamente</p>
         <a
-          href={`tel:+${BROKER_PHONE_DISPLAY.replace(/\D/g, '')}`}
+          href={`tel:${BROKER_PHONE_TEL}`}
           className="inline-flex items-center gap-2 text-sm font-semibold text-azul-escuro hover:text-azul-medio"
         >
           {BROKER_PHONE_DISPLAY}

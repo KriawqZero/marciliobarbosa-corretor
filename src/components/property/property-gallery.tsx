@@ -226,6 +226,11 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
               alt={activeImage.alt || title}
               width={activeImage.width}
               height={activeImage.height}
+              // Sem `sizes`, o navegador escolhe a variante pela largura
+              // intrínseca da foto (3060px nas fotos deste acervo) e baixa a
+              // maior do srcset.
+              sizes="90vw"
+              quality={85}
               className={`max-h-[85vh] w-auto rounded-lg object-contain transition-opacity duration-300 ${isImageLoading ? 'opacity-40' : 'opacity-100'}`}
               onLoad={() => setIsImageLoading(false)}
             />

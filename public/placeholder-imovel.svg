@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900" role="img" aria-label="Imóvel sem foto">
+  <rect width="1200" height="900" fill="#F9FAFB"/>
+  <g fill="none" stroke="#C9D2DD" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M420 480 600 330 780 480v240a24 24 0 0 1-24 24H444a24 24 0 0 1-24-24z"/>
+    <path d="M552 744V612h96v132"/>
+  </g>
+  <text x="600" y="828" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="34" font-weight="600" fill="#9AA6B4">Foto em breve</text>
+</svg>

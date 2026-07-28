@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { Container } from '@/components/layout/container'
 import { SectionHeading } from '@/components/shared/section-heading'
-import { getPropertiesCount } from '@/data/services/properties'
-
-export async function CitySection() {
-  const corumbaCount = await getPropertiesCount({ citySlug: 'corumba' })
-  const ladarioCount = await getPropertiesCount({ citySlug: 'ladario' })
-
+export function CitySection({
+  corumbaCount,
+  ladarioCount,
+}: {
+  corumbaCount: number
+  ladarioCount: number
+}) {
   const cities = [
     {
       name: 'Corumbá',
