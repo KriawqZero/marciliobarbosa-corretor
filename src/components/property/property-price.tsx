@@ -1,4 +1,4 @@
-import { formatPriceWithSuffix } from '@/lib/format'
+import { formatPriceWithSuffix, isRedundantPriceNote } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 interface PropertyPriceProps {
@@ -27,8 +27,8 @@ export function PropertyPrice({
       <span className={cn('font-bold text-azul-escuro', sizeStyles[size])}>
         {formatPriceWithSuffix(price, priceSuffix)}
       </span>
-      {priceNote && (
-        <span className="text-xs font-medium text-verde">{priceNote}</span>
+      {priceNote && !isRedundantPriceNote(priceNote) && (
+        <span className="mt-1 text-sm text-cinza-600">{priceNote}</span>
       )}
     </div>
   )

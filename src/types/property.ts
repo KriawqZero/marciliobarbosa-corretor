@@ -58,6 +58,10 @@ export interface CategoryMeta {
   title: string
   description: string
   filter: PropertyFilter
+  /// Mensagem quando a categoria não tem nenhum imóvel. As categorias vazias
+  /// continuam visíveis, então a página precisa explicar e dar uma saída.
+  emptyTitle?: string
+  emptyDescription?: string
 }
 
 export interface PaginatedResult<T> {

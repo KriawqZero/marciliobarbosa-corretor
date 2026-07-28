@@ -68,9 +68,21 @@ async function PropertyList({ searchParams }: { searchParams: Record<string, str
   const order = ordem === 'preco_asc' || ordem === 'preco_desc' ? ordem : undefined
 
   const paged = await getPropertiesPaged(filter, { page, limit: 12, order })
+  const temFiltro = Object.keys(filter).length > 0
 
   return (
     <>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-cinza-600">
+          <span className="font-semibold text-cinza-900">{paged.total}</span>{' '}
+          {paged.total === 1 ? 'imóvel' : 'imóveis'}
+          {temFiltro ? ' com estes filtros' : ' disponíveis'}
+        </p>
+        <Suspense>
+          <SortSelect />
+        </Suspense>
+      </div>
+
       <PropertyGrid properties={paged.items} />
       <Pagination
         basePath="/imoveis"
@@ -101,12 +113,9 @@ export default async function ImoveisPage({ searchParams }: PageProps) {
           </p>
         </div>
 
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-8">
           <Suspense>
             <FilterBar />
-          </Suspense>
-          <Suspense>
-            <SortSelect />
           </Suspense>
         </div>
 

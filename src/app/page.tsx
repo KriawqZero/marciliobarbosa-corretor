@@ -1,17 +1,11 @@
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
 import { HeroSection } from '@/components/sections/hero-section'
-import { CategoryCards } from '@/components/sections/category-cards'
-import { FeaturedProperties } from '@/components/sections/featured-properties'
-import { SpecialOpportunities } from '@/components/sections/special-opportunities'
-import { CitySection } from '@/components/sections/city-section'
-import { InstitutionalSection } from '@/components/sections/institutional-section'
-import { CTASection } from '@/components/sections/cta-section'
+import { RecentProperties } from '@/components/sections/recent-properties'
+import { BrokerStrip } from '@/components/sections/broker-strip'
 import { buildMetadata, DEFAULT_SOCIAL_IMAGE } from '@/lib/metadata'
 import {
-  getFeaturedProperties,
-  getSpecialOpportunities,
-  getPropertiesCount,
+  getRecentProperties,
+  getCatalogCounts,
 } from '@/data/services/properties'
 import {
   BROKER_NAME,
@@ -52,49 +46,23 @@ export const metadata: Metadata = buildMetadata({
   },
 })
 
-// Carregadores: buscam os dados e entregam para os componentes de apresentação,
-// que permanecem puros. Ficam atrás de `Suspense` para que o hero — que é
-// estático — não espere por banco nenhum.
-async function FeaturedPropertiesSlot() {
-  const properties = await getFeaturedProperties()
-  return <FeaturedProperties properties={properties} />
-}
-
-async function SpecialOpportunitiesSlot() {
-  const opportunities = await getSpecialOpportunities()
-  return <SpecialOpportunities opportunities={opportunities} />
-}
-
-async function CitySlot() {
-  const [corumbaCount, ladarioCount] = await Promise.all([
-    getPropertiesCount({ citySlug: 'corumba' }),
-    getPropertiesCount({ citySlug: 'ladario' }),
-  ])
-  return <CitySection corumbaCount={corumbaCount} ladarioCount={ladarioCount} />
-}
-
-export default function Home() {
+export default async function Home() {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL || 'https://marciliobarbosacorretor.com.br'
 
+  // Uma espera só, em paralelo, e a página inteira pinta de uma vez. Sem
+  // esqueleto de página inteira e sem seções chegando depois — as duas coisas
+  // que produziam deslocamento de layout.
+  const [recent, counts] = await Promise.all([
+    getRecentProperties(6),
+    getCatalogCounts(),
+  ])
+
   return (
     <>
-      {/* Hero e categorias não dependem de dados: renderizam no primeiro paint
-          e nunca se movem. Era a troca do esqueleto de página inteira pelo
-          conteúdo real que gerava o CLS de 0,172 (medido). */}
-      <HeroSection />
-      <CategoryCards />
-      <Suspense fallback={null}>
-        <FeaturedPropertiesSlot />
-      </Suspense>
-      <Suspense fallback={null}>
-        <SpecialOpportunitiesSlot />
-      </Suspense>
-      <Suspense fallback={null}>
-        <CitySlot />
-      </Suspense>
-      <InstitutionalSection />
-      <CTASection />
+      <HeroSection counts={counts} />
+      <RecentProperties properties={recent} total={counts.total} />
+      <BrokerStrip />
 
       <script
         type="application/ld+json"

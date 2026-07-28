@@ -69,10 +69,14 @@ async function CategoryPropertyList({
   baseFilter,
   searchParams,
   basePath,
+  emptyTitle,
+  emptyDescription,
 }: {
   baseFilter: PropertyFilter
   searchParams: Record<string, string | string[] | undefined>
   basePath: string
+  emptyTitle?: string
+  emptyDescription?: string
 }) {
   const filter = buildFilterFromParams(baseFilter, searchParams)
   const rawPage = searchParams.page
@@ -88,7 +92,21 @@ async function CategoryPropertyList({
 
   return (
     <>
-      <PropertyGrid properties={paged.items} />
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-cinza-600">
+          <span className="font-semibold text-cinza-900">{paged.total}</span>{' '}
+          {paged.total === 1 ? 'imóvel' : 'imóveis'}
+        </p>
+        <Suspense>
+          <SortSelect />
+        </Suspense>
+      </div>
+
+      <PropertyGrid
+        properties={paged.items}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+      />
       <Pagination
         basePath={basePath}
         searchParams={searchParams}
@@ -126,12 +144,9 @@ export default async function CategoriaPage({ params, searchParams }: PageProps)
           <p className="mt-1 text-cinza-600">{cat.description}</p>
         </div>
 
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-8">
           <Suspense>
             <FilterBar />
-          </Suspense>
-          <Suspense>
-            <SortSelect />
           </Suspense>
         </div>
 
@@ -140,6 +155,8 @@ export default async function CategoriaPage({ params, searchParams }: PageProps)
             baseFilter={cat.filter}
             searchParams={search}
             basePath={`/imoveis/${categoria}`}
+            emptyTitle={cat.emptyTitle}
+            emptyDescription={cat.emptyDescription}
           />
         </Suspense>
       </Container>

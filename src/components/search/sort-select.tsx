@@ -1,12 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-
-const sortOptions = [
-  { value: '', label: 'Mais recentes' },
-  { value: 'preco_asc', label: 'Menor preço' },
-  { value: 'preco_desc', label: 'Maior preço' },
-]
+import { SORT_OPTIONS } from '@/components/search/search-options'
 
 export function SortSelect() {
   const router = useRouter()
@@ -32,7 +27,7 @@ export function SortSelect() {
       value={searchParams.get('ordem') || ''}
       onChange={(e) => handleChange(e.target.value)}
     >
-      {sortOptions.map((opt) => (
+      {SORT_OPTIONS.map((opt) => (
         <option key={opt.value} value={opt.value}>
           {opt.label}
         </option>

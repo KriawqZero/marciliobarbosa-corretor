@@ -194,6 +194,50 @@ export async function getFeaturedProperties(): Promise<Property[]> {
   return properties.map(serializeProperty)
 }
 
+/// Imóveis mais recentes disponíveis. Substitui o conceito de "destaque" na home:
+/// não depende de ninguém lembrar de marcar nada no app.
+export async function getRecentProperties(limit = 6): Promise<Property[]> {
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
+
+  const properties = await prisma.property.findMany({
+    where: { status: PropertyStatus.disponivel },
+    include: {
+      images: { orderBy: { sortOrder: 'asc' } },
+    },
+    orderBy: [{ createdAt: 'desc' }],
+    take: limit,
+  })
+
+  return properties.map(serializeProperty)
+}
+
+export interface CatalogCounts {
+  total: number
+  byType: Record<string, number>
+  byCity: Record<string, number>
+}
+
+/// Contagens reais do catálogo, para a home não prometer o que não existe.
+export async function getCatalogCounts(): Promise<CatalogCounts> {
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
+
+  const where = { status: PropertyStatus.disponivel }
+
+  const [total, byTypeRows, byCityRows] = await Promise.all([
+    prisma.property.count({ where }),
+    prisma.property.groupBy({ by: ['type'], where, _count: { _all: true } }),
+    prisma.property.groupBy({ by: ['citySlug'], where, _count: { _all: true } }),
+  ])
+
+  const byType: Record<string, number> = {}
+  for (const row of byTypeRows) byType[row.type] = row._count._all
+
+  const byCity: Record<string, number> = {}
+  for (const row of byCityRows) byCity[row.citySlug] = row._count._all
+
+  return { total, byType, byCity }
+}
+
 export async function getSpecialOpportunities(): Promise<Property[]> {
   if (!prisma) return Promise.reject(new Error('Database not configured'))
 
