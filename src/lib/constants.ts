@@ -249,9 +249,9 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'corumba',
     title: 'Imóveis em Corumbá',
     description: 'Todos os imóveis disponíveis em Corumbá-MS',
-    seoTitle: 'Imóveis em Corumbá - MS: Casas, Terrenos e Apartamentos',
+    seoTitle: 'Imóveis em Corumbá - MS: Casas, Terrenos e Áreas Rurais',
     seoDescription:
-      'Imóveis em Corumbá-MS para comprar e alugar: casas, terrenos, apartamentos, pontos comerciais e áreas rurais. Corretor local com atendimento no WhatsApp.',
+      'Imóveis em Corumbá-MS para comprar e alugar: casas, terrenos, pontos comerciais e áreas rurais. Corretor local registrado, com atendimento no WhatsApp.',
     keywords: [
       'imóveis Corumbá MS',
       'corretor de imóveis Corumbá',
@@ -271,9 +271,9 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'ladario',
     title: 'Imóveis em Ladário',
     description: 'Todos os imóveis disponíveis em Ladário-MS',
-    seoTitle: 'Imóveis em Ladário - MS: Casas, Terrenos e Apartamentos',
+    seoTitle: 'Imóveis em Ladário - MS',
     seoDescription:
-      'Imóveis em Ladário-MS para comprar e alugar: casas, terrenos, apartamentos e áreas rurais. Corretor local com atendimento direto pelo WhatsApp.',
+      'Imóveis disponíveis em Ladário-MS, cidade vizinha a Corumbá. Corretor local registrado, com atendimento direto pelo WhatsApp.',
     keywords: [
       'imóveis Ladário MS',
       'corretor de imóveis Ladário',

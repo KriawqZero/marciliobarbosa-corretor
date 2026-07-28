@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 const DESKTOP_VIDEO_ID = '6laCK5zUweY'
-const MOBILE_SHORT_ID = 'Zvo2KDr7iDc'
 const PLAYER_ORIGIN = 'https://www.youtube-nocookie.com'
 
 /// `onStateChange` do player: 1 = tocando. Só nesse estado o vídeo é revelado.
@@ -50,12 +49,23 @@ function extractPlayerState(data: unknown): number | undefined {
 export function HeroVideoBackground() {
   // `null` = ainda não decidimos montar, ou decidimos não montar.
   const [videoId, setVideoId] = useState<string | null>(null)
-  const [isPortrait, setIsPortrait] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const frameRef = useRef<HTMLIFrameElement>(null)
 
   // Decide se e quando montar o iframe — sempre depois do primeiro paint. O vídeo
   // é decoração e não deve competir com o conteúdo da página.
+  //
+  // Medição em celular (375×812): a home baixava 2.376.963 bytes, dos quais
+  // ~1.597.306 (67%) eram do player do YouTube — só o `base.js` são 476 KB, mais
+  // 600 KB de segmento de vídeo. As páginas sem o embed pesam ~772 KB. O público
+  // deste site acessa majoritariamente do celular, no interior de MS, com rede
+  // instável: 1,6 MB de decoração disputa banda com a foto que forma o LCP.
+  //
+  // Por isso o vídeo passa a ser exclusivo do desktop, e ainda assim só quando a
+  // rede declara ser rápida. Não virou "clique para tocar": um botão de play num
+  // fundo decorativo pede uma ação que ninguém faz, e o resultado prático seria
+  // o vídeo nunca tocar para ninguém. O gradiente do hero é o estado normal em
+  // celular — e ele já era o estado de fallback, então nada regride visualmente.
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
@@ -64,17 +74,26 @@ export function HeroVideoBackground() {
     // baixado ~1,7 MB. Agora nem monta.
     if (prefersReducedMotion) return
 
+    // Abaixo de 1024px nunca carrega: é onde está a maior parte do tráfego e
+    // onde o custo dói.
+    if (!window.matchMedia('(min-width: 1024px)').matches) return
+
     const connection = (
-      navigator as Navigator & { connection?: { saveData?: boolean } }
+      navigator as Navigator & {
+        connection?: { saveData?: boolean; effectiveType?: string }
+      }
     ).connection
     if (connection?.saveData) return
-
-    const isMobile = window.matchMedia('(max-width: 767px)').matches
-
-    const start = () => {
-      setIsPortrait(isMobile)
-      setVideoId(isMobile ? MOBILE_SHORT_ID : DESKTOP_VIDEO_ID)
+    // `effectiveType` mede a velocidade observada, não a tecnologia: um 4G ruim
+    // se declara `3g`. Quando o navegador não informa, seguimos em frente.
+    if (
+      connection?.effectiveType &&
+      connection.effectiveType !== '4g'
+    ) {
+      return
     }
+
+    const start = () => setVideoId(DESKTOP_VIDEO_ID)
 
     if (typeof window.requestIdleCallback === 'function') {
       const handle = window.requestIdleCallback(start, { timeout: 4000 })
@@ -146,11 +165,7 @@ export function HeroVideoBackground() {
     >
       <iframe
         ref={frameRef}
-        className={
-          isPortrait
-            ? 'hero-youtube-iframe hero-youtube-iframe-portrait'
-            : 'hero-youtube-iframe hero-youtube-iframe-landscape'
-        }
+        className="hero-youtube-iframe hero-youtube-iframe-landscape"
         src={embedUrl}
         title="Vídeo de fundo"
         loading="lazy"

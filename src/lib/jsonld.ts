@@ -120,12 +120,15 @@ export function buildBrokerJsonLd(): JsonLdObject {
       postalCode: BROKER_POSTAL_CODE,
       addressCountry: 'BR',
     },
+    /// `Number`, não string. As coordenadas das cidades em `areaServed` já
+    /// eram numéricas, e o mesmo campo com dois tipos diferentes no mesmo
+    /// documento é o tipo de inconsistência que valida hoje e quebra amanhã.
     geo:
       BROKER_LATITUDE && BROKER_LONGITUDE
         ? {
             '@type': 'GeoCoordinates',
-            latitude: BROKER_LATITUDE,
-            longitude: BROKER_LONGITUDE,
+            latitude: Number(BROKER_LATITUDE),
+            longitude: Number(BROKER_LONGITUDE),
           }
         : undefined,
     openingHoursSpecification: BROKER_OPENING_HOURS.map((slot) => ({

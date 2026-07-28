@@ -52,13 +52,6 @@ export async function generateMetadata({
     title: `Imóveis em Corumbá e Ladário-MS${pageSuffix}`,
     description:
       'Imóveis à venda e para alugar em Corumbá-MS e Ladário-MS: casas, apartamentos, terrenos, pontos comerciais e áreas rurais. Fotos, preços e contato direto com o corretor.',
-    keywords: [
-      'imóveis Corumbá MS',
-      'imóveis Ladário MS',
-      'corretor de imóveis Corumbá',
-      'casas à venda Corumbá',
-      'aluguel Corumbá MS',
-    ],
     alternates: {
       canonical: buildListingCanonical(BASE_PATH, page),
     },

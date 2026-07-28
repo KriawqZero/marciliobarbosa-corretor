@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Container } from '@/components/layout/container'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { ContactSection } from '@/components/shared/contact-section'
@@ -16,12 +17,6 @@ export const metadata: Metadata = buildMetadata({
     absolute: `Contato — ${BROKER_NAME}, Corretor em Corumbá-MS`,
   },
   description: `Fale com ${BROKER_NAME}, corretor de imóveis em Corumbá-MS e Ladário-MS. Atendimento por WhatsApp ${BROKER_PHONE_DISPLAY}, telefone e e-mail.`,
-  keywords: [
-    'contato corretor de imóveis Corumbá',
-    'telefone corretor Corumbá MS',
-    'WhatsApp corretor Corumbá',
-    'corretor Ladário MS contato',
-  ],
   alternates: {
     canonical: '/contato',
   },
@@ -101,6 +96,20 @@ export default function ContatoPage() {
               <p className="text-xs text-cinza-600">
                 O formulário será ativado em breve. Enquanto isso, entre em
                 contato pelo WhatsApp para atendimento imediato.
+              </p>
+              {/* Aviso de privacidade junto do formulário, e não só no rodapé:
+                  é aqui que os dados seriam entregues, e a LGPD pede que a
+                  finalidade esteja declarada antes da coleta. */}
+              <p className="text-xs text-cinza-600">
+                Ao enviar, seus dados são usados apenas para responder ao seu
+                contato. Veja a{' '}
+                <Link
+                  href="/privacidade"
+                  className="font-medium text-azul-escuro underline underline-offset-2"
+                >
+                  Política de Privacidade
+                </Link>
+                .
               </p>
             </form>
           </div>

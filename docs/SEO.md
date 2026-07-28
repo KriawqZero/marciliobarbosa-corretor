@@ -176,6 +176,27 @@ alimentado por esse endpoint, com opção de digitar um bairro novo.
 
 ---
 
+## 4.2. Fora do código — só o dono resolve
+
+| O quê | Por quê |
+|---|---|
+| **Domínio `www`** | `www.marciliobarbosacorretor.com.br` responde **404 da Vercel** (`x-vercel-error: DEPLOYMENT_NOT_FOUND`). É um CNAME órfão apontando para um deploy que não existe mais; o site real está no Railway. Todo link externo, cartão de visita ou citação com `www` perde 100% do tráfego e não transfere autoridade. Remover o CNAME no provedor de DNS e criar 301 de `www` para o domínio sem `www`. |
+| **Perfil da Empresa no Google** | Maior alavanca de busca local que existe e não é código. Configurar como *service-area business* (Corumbá e Ladário), categoria "Corretor de imóveis", NAP idêntico ao site. Depois: colar a URL do perfil em `BROKER_SOCIAL_PROFILES` para entrar no `sameAs`. |
+| **Avaliações** | Enviar o link de avaliação por WhatsApp após cada negócio fechado. Cadência constante pesa mais que volume de uma vez. |
+| **Brotli** | O servidor entrega gzip mesmo quando o navegador aceita `br`. É configuração de hospedagem. |
+
+### ⚠️ Endereço no JSON-LD
+
+O site declara `Rua Marechal Antônio Maria Coelho, 3213, Corumbá-MS, 79311-030`
+no JSON-LD, mas **nenhuma página exibe esse endereço ao visitante**. Se for
+endereço residencial, vale decidir conscientemente se deve ficar público — o
+JSON-LD é lido por qualquer robô, e o Perfil da Empresa tornaria isso ainda
+mais visível. Alternativa: manter só cidade, estado e CEP (basta esvaziar
+`BROKER_STREET_ADDRESS`) e configurar o GBP como negócio de área de
+atendimento, sem endereço exibido.
+
+---
+
 ## 5. O que já está implementado
 
 **Rastreamento e descoberta**
@@ -231,6 +252,27 @@ alimentado por esse endpoint, com opção de digitar um bairro novo.
 - Bloco "Buscas relacionadas" no rodapé de cada categoria e "Buscas mais
   procuradas" em `/imoveis`: as páginas novas não estão no menu, e página que
   nenhuma outra referencia é lida como pouco importante.
+
+**Desempenho e cache**
+- O embed do YouTube no hero não carrega mais em celular. Media do briefing: a
+  home baixava 2.376.963 bytes, dos quais ~1.597.306 (67%) eram do player. Ele
+  agora é exclusivo de desktop ≥1024px com rede declarada rápida.
+- Fichas de imóvel servidas do cache (`s-maxage=600`), em vez de `no-store` a
+  cada visita. Detalhe que custou medição: `revalidate` sozinho **não** liga o
+  ISR numa rota com parâmetro dinâmico — é preciso declarar
+  `generateStaticParams`. Devolvendo lista vazia, a rota entra no pipeline
+  estático sem pré-renderizar nada no build, então o build segue rodando sem
+  banco.
+- `/imoveis/[categoria]` continua dinâmica: ela lê filtros da URL
+  (`searchParams`), e isso impede o cache de página. O cache de dados
+  (`unstable_cache`) já cobre a parte cara.
+
+**Segurança e conformidade**
+- `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy` e `Permissions-Policy` na origem.
+- `/privacidade` publicada, linkada no rodapé e ao lado do formulário de
+  contato. Sem ela, ativar o formulário seria coletar dado pessoal sem base
+  legal declarada.
 
 **Conteúdo**
 - Titles e descrições por categoria, escritos na forma como a busca local é

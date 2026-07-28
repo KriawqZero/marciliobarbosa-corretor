@@ -78,15 +78,39 @@ export async function generateMetadata({
   /// sozinha na revalidação.
   const total = await getPropertiesCount(cat.filter).catch(() => 0)
 
+  /// Faceta que não recorta nada aponta para a página de onde nasceu.
+  ///
+  /// Como o acervo hoje é quase todo de venda, "casas à venda em Corumbá"
+  /// devolve exatamente a mesma lista de "casas em Corumbá" — duas URLs
+  /// indexadas com o mesmo conteúdo byte a byte, competindo entre si pela
+  /// mesma busca. O filtro funciona; é o inventário que não tem o outro lado.
+  ///
+  /// Comparar as contagens resolve sozinho e nos dois sentidos: o filtro da
+  /// faceta é sempre mais estreito que o da origem, então contagem igual
+  /// significa conjunto igual. No dia em que entrar a primeira casa para
+  /// alugar em Corumbá, as contagens divergem e as duas páginas voltam a
+  /// existir por conta própria.
+  const parentSlug = cat.parent
+  const parentTotal = parentSlug
+    ? await getPropertiesCount(CATEGORIES[parentSlug].filter).catch(() => -1)
+    : -1
+  const isRedundant = parentSlug !== undefined && total === parentTotal
+
+  const canonical = isRedundant
+    ? `/imoveis/${parentSlug}`
+    : buildListingCanonical(basePath, page)
+
   return buildMetadata({
     path: basePath,
     title,
     description,
-    keywords: cat.keywords,
     alternates: {
-      canonical: buildListingCanonical(basePath, page),
+      canonical,
     },
-    robots: filtered || total === 0 ? NOINDEX_FOLLOW_ROBOTS : undefined,
+    robots:
+      filtered || total === 0 || isRedundant
+        ? NOINDEX_FOLLOW_ROBOTS
+        : undefined,
     openGraph: {
       title: `${cat.seoTitle ?? cat.title} | ${SITE_NAME}`,
       description,
