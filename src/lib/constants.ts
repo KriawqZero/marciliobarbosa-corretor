@@ -12,6 +12,12 @@ export const BROKER_CRECI = 'CRECI/MS 17.159'
 export const WHATSAPP_DEFAULT_MESSAGE =
   'Olá! Gostaria de mais informações sobre imóveis disponíveis em Corumbá e Ladário.'
 
+/// Tag do cache de dados do catálogo (`unstable_cache` em
+/// `data/services/properties.ts`). Vive aqui — e não lá — porque arquivos
+/// `'use server'` só podem exportar funções assíncronas, e `revalidate.ts`
+/// também precisa dela para invalidar tudo após uma escrita.
+export const PROPERTIES_CACHE_TAG = 'properties'
+
 export const CITIES = ['Corumbá', 'Ladário'] as const
 
 /// ---------------------------------------------------------------------------
