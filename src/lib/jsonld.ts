@@ -17,6 +17,7 @@ import {
   SITE_NAME,
 } from './constants'
 import { SITE_URL, getAbsoluteUrl } from './metadata'
+import { isRealNeighborhood } from './format'
 
 /// Identificadores estáveis do grafo. Usar `@id` em vez de repetir o bloco
 /// inteiro do corretor em cada página é o que faz o buscador entender que é
@@ -72,8 +73,6 @@ function cityAddress(citySlug: string, cityName: string): JsonLdObject {
 /// painel lateral do Google e as respostas de assistentes de IA sobre "corretor
 /// de imóveis em Corumbá".
 export function buildBrokerJsonLd(): JsonLdObject {
-  const hasOffice = Boolean(BROKER_STREET_ADDRESS)
-
   return pruneEmpty({
     '@type': 'RealEstateAgent',
     '@id': ORGANIZATION_ID,
@@ -110,16 +109,17 @@ export function buildBrokerJsonLd(): JsonLdObject {
         name: 'CRECI-MS — Conselho Regional de Corretores de Imóveis de Mato Grosso do Sul',
       },
     },
-    address: hasOffice
-      ? {
-          '@type': 'PostalAddress',
-          streetAddress: BROKER_STREET_ADDRESS,
-          addressLocality: 'Corumbá',
-          addressRegion: 'MS',
-          postalCode: BROKER_POSTAL_CODE,
-          addressCountry: 'BR',
-        }
-      : undefined,
+    /// Cidade, estado e CEP são declarados mesmo sem logradouro: já situam o
+    /// negócio na região certa. O logradouro entra sozinho quando existir —
+    /// `pruneEmpty` retira o campo em branco em vez de afirmar endereço vazio.
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: BROKER_STREET_ADDRESS,
+      addressLocality: 'Corumbá',
+      addressRegion: 'MS',
+      postalCode: BROKER_POSTAL_CODE,
+      addressCountry: 'BR',
+    },
     geo:
       BROKER_LATITUDE && BROKER_LONGITUDE
         ? {
@@ -321,11 +321,19 @@ export function buildPropertyJsonLd(property: Property): JsonLdObject {
         value: property.totalArea,
         unitCode: 'MTK',
       },
-      {
-        '@type': 'PropertyValue',
-        name: 'Bairro',
-        value: property.neighborhood,
-      },
+      /// Bairro só entra na lista quando existe de fato. Deixar a entrada com o
+      /// valor vazio não resolve: `pruneEmpty` tira o campo `value`, mas o
+      /// objeto sobrevive por causa do `name`, e o buscador lê um atributo
+      /// "Bairro" sem conteúdo.
+      ...(isRealNeighborhood(property.neighborhood)
+        ? [
+            {
+              '@type': 'PropertyValue',
+              name: 'Bairro',
+              value: property.neighborhood,
+            },
+          ]
+        : []),
       {
         '@type': 'PropertyValue',
         name: 'Tipo de imóvel',
@@ -372,7 +380,9 @@ export function buildPropertyJsonLd(property: Property): JsonLdObject {
     '@type': 'RealEstateListing',
     '@id': `${url}#anuncio`,
     url,
-    name: `${property.title} — ${property.neighborhood}, ${property.city}-MS`,
+    name: isRealNeighborhood(property.neighborhood)
+      ? `${property.title} — ${property.neighborhood}, ${property.city}-MS`
+      : `${property.title} — ${property.city}-MS`,
     headline: property.title,
     description: property.shortDescription,
     inLanguage: 'pt-BR',

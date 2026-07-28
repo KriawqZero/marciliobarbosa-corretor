@@ -60,9 +60,20 @@ mas o perfil precisa existir.
 
 ## 3. IndexNow (Bing, DuckDuckGo, Yandex, Yep)
 
-Já implementado. Funcionamento:
+É um protocolo aberto: em vez de esperar o robô do buscador passar pelo site
+(o que pode levar dias ou semanas), o site avisa que uma página mudou. Um único
+envio notifica Bing, DuckDuckGo, Yandex, Seznam, Naver e Yep de uma vez.
 
-- A chave é servida em `/indexnow-key.txt`.
+A chave (`INDEXNOW_KEY`) funciona como senha: o site publica a chave num
+arquivo de texto, e o buscador baixa esse arquivo para conferir que quem
+notificou realmente controla o domínio. Ela precisa ter de 8 a 128 caracteres
+entre `a-z`, `A-Z`, `0-9` e hífen.
+
+Funcionamento neste site:
+
+- A chave é servida em dois lugares: `/indexnow-key.txt` (caminho fixo, enviado
+  no campo `keyLocation` de cada notificação) e `/{chave}.txt` na raiz, que é a
+  forma recomendada pela especificação.
 - Toda vez que um imóvel é criado, editado ou removido pela API
   (`/api/imovel`), o site notifica o IndexNow com as URLs afetadas.
 - Para reenviar o site inteiro (primeira publicação, troca de domínio, ou
@@ -73,8 +84,16 @@ curl -X POST https://marciliobarbosacorretor.com.br/api/indexnow \
   -H "Authorization: Bearer $API_PASSWORD"
 ```
 
-A resposta traz `status`. `200` ou `202` significa aceito; `403` é chave
-inválida; `422` é host que não bate com a chave.
+A resposta traz `status`:
+
+| Código | Significado |
+|---|---|
+| 200 | URLs recebidas |
+| 202 | Recebidas, validação da chave pendente |
+| 400 | Formato inválido |
+| 403 | Chave inválida (arquivo não encontrado, ou chave não confere) |
+| 422 | URLs não pertencem ao domínio, ou chave fora do formato |
+| 429 | Envios demais — esperar |
 
 O Google **não** participa do IndexNow. Lá a atualização continua vindo do
 sitemap e do Search Console.
@@ -87,17 +106,16 @@ Estas ficam em `src/lib/constants.ts`. Cada campo vazio é simplesmente omitido
 do JSON-LD — schema com campo inventado é pior que schema incompleto, porque o
 buscador trata como dado errado.
 
-| Constante | O que é | Por que importa |
-|---|---|---|
-| `BROKER_STREET_ADDRESS` | Endereço do escritório/atendimento | Sem endereço, o Google não consegue tratar o negócio como local e não mostra no mapa |
-| `BROKER_POSTAL_CODE` | CEP desse endereço | Idem |
-| `BROKER_LATITUDE` / `BROKER_LONGITUDE` | Coordenadas do escritório | Melhora buscas do tipo "corretor perto de mim" |
-| `BROKER_SOCIAL_PROFILES` | Instagram, Facebook, YouTube, perfil do Google | É por `sameAs` que o buscador confirma que site e perfis são a mesma pessoa — um dos sinais mais fortes de identidade |
-| `BROKER_OPENING_HOURS` | Horário de atendimento | Aparece direto no resultado ("Aberto agora") |
-| `BROKER_FOUNDING_YEAR` | Ano em que começou a atuar | Sinal de tempo de atuação |
+| Constante | Situação |
+|---|---|
+| `BROKER_POSTAL_CODE` | ✅ `79304-070` |
+| `BROKER_LATITUDE` / `BROKER_LONGITUDE` | ✅ `-19.0249553` / `-57.6424487` |
+| `BROKER_SOCIAL_PROFILES` | ✅ Facebook e Instagram |
+| `BROKER_OPENING_HOURS` | ✅ Seg–sex 07:00–17:00, sáb 07:00–12:00 |
+| `BROKER_FOUNDING_YEAR` | ✅ `2016` |
+| `BROKER_STREET_ADDRESS` | ✅ Rua Marechal Antônio Maria Coelho, 3213 |
 
-Se o atendimento não tem endereço fixo, deixe `BROKER_STREET_ADDRESS` vazio —
-é melhor que um endereço aproximado.
+Todos os campos da ficha de negócio local estão preenchidos.
 
 ### Falta também no conteúdo
 
@@ -105,9 +123,10 @@ Se o atendimento não tem endereço fixo, deixe `BROKER_STREET_ADDRESS` vazio �
    sitemap de imagens. "Fachada da casa com garagem para 2 carros" rende busca;
    "IMG_2043" não rende nada.
 
-2. **Bairro sempre preenchido.** Hoje o cadastro aceita `"A definir"` como
-   padrão. Bairro é o termo mais buscado depois da cidade ("casa no Centro de
-   Corumbá"), e entra no title, na descrição e no JSON-LD.
+2. **Bairro preenchido sempre que possível.** Bairro é o termo mais buscado
+   depois da cidade ("casa no Centro de Corumbá") e entra no title, na descrição
+   e no JSON-LD. O site já se protege quando falta (ver abaixo), mas o imóvel
+   sem bairro simplesmente não disputa essas buscas.
 
 3. **Descrição longa de verdade em cada imóvel.** Quando `longDescription` fica
    igual à curta, a página do imóvel tem pouco texto próprio e compete mal.
@@ -116,10 +135,44 @@ Se o atendimento não tem endereço fixo, deixe `BROKER_STREET_ADDRESS` vazio �
    breve". Já existe `POST /api/leads`; ligar os dois fecha uma lacuna que hoje
    é um caminho morto para quem prefere formulário a WhatsApp.
 
-5. **Páginas por bairro.** Hoje há páginas por cidade e por tipo. Os bairros com
-   acervo recorrente (Centro, Popular, Nova Corumbá, Cristo Redentor) renderiam
-   páginas próprias com busca bem mais específica. Vale quando houver volume de
-   imóveis suficiente para a página não nascer vazia.
+5. **Páginas por bairro.** Hoje há páginas por cidade, por tipo e por
+   combinação. Os bairros com acervo recorrente renderiam páginas próprias com
+   busca ainda mais específica. Vale quando houver volume de imóveis suficiente
+   para a página não nascer vazia.
+
+---
+
+## 4.1. Bairro: o que o site faz sozinho
+
+O cadastro grava `"A definir"` quando o bairro não é informado. Isso é rótulo de
+ausência, não um bairro — e antes vazava para o Google: o título do resultado
+saía como *"Casa à venda em A definir, Corumbá-MS"*.
+
+Três coisas passaram a acontecer sem intervenção:
+
+**1. Imóvel sem bairro não anuncia bairro.** Título, descrição, palavras-chave,
+JSON-LD, cards e a página do imóvel caem para a cidade quando o bairro não
+existe. O anúncio fica com menos alcance, mas nunca com texto quebrado.
+
+**2. A grafia é unificada na gravação.** Digitar `CENTRO`, `centro` ou
+`  Centro  ` grava `Centro` se esse bairro já existir no acervo — a comparação
+ignora acento, caixa e espaço extra. Sem isso, "Nova Corumbá" e "nova corumba"
+virariam dois bairros: o resumo das páginas listaria os dois e a busca por
+bairro encontraria metade dos imóveis. A primeira vez que um bairro é digitado
+define a grafia; as próximas seguem.
+
+**3. `GET /api/bairros` devolve os bairros já usados**, opcionalmente filtrados
+por `?cidade=corumba` ou `?cidade=ladario`. Serve para o app mobile mostrar uma
+lista para tocar em vez de um campo para digitar. A lista sai do próprio banco —
+nenhum nome inventado — e melhora sozinha conforme o acervo cresce.
+
+```bash
+curl "https://marciliobarbosacorretor.com.br/api/bairros?cidade=corumba"
+# {"cidade":"corumba","total":4,"neighborhoods":["Centro","Cristo Redentor",...]}
+```
+
+O passo que ainda depende do app: trocar o campo de texto por um seletor
+alimentado por esse endpoint, com opção de digitar um bairro novo.
 
 ---
 
@@ -131,6 +184,17 @@ Se o atendimento não tem endereço fixo, deixe `BROKER_STREET_ADDRESS` vazio �
 - `feed.xml` (RSS) dos imóveis recentes, declarado no `<head>`
 - IndexNow automático a cada mudança de imóvel
 - `manifest.webmanifest`
+
+**Status HTTP correto (soft 404)**
+- Imóvel removido ou URL digitada errada responde **404 de verdade**, não 200.
+  Antes o site mostrava a tela "Página não encontrada" mas afirmava 200 OK, e o
+  buscador indexava cada URL errada como página válida. A causa eram os
+  arquivos `loading.tsx` dessas rotas: ao enviar o esqueleto imediatamente, o
+  status ficava travado em 200 antes de o código descobrir que o imóvel não
+  existia.
+- Categoria inexistente é barrada em `src/middleware.ts`, que roda antes do
+  envio da resposta. A página de categoria lê filtros da URL, então é sempre
+  dinâmica e não conseguiria corrigir o status por conta própria.
 
 **Controle de indexação**
 - `max-image-preview:large` em todo o site — é o que faz o Google exibir a foto
@@ -147,6 +211,26 @@ Se o atendimento não tem endereço fixo, deixe `BROKER_STREET_ADDRESS` vazio �
   coordenadas, metragem, quartos, banheiros, vagas, comodidades e galeria
 - `CollectionPage` + `ItemList` nas páginas de catálogo
 - `AboutPage` + `Person` e `ContactPage`
+
+**Páginas de busca combinada**
+- 15 páginas para as buscas que as pessoas realmente digitam: "casas à venda em
+  Corumbá MS", "terrenos à venda em Corumbá", "imóveis para alugar em Ladário".
+  Antes essas combinações existiam só como filtro na URL, que é marcado como
+  não-indexável de propósito.
+- Definidas em `COMBOS`, em `src/lib/constants.ts`. Cada uma vira uma categoria
+  normal: entra no sitemap, na trilha e nos dados estruturados sem código novo.
+  Para criar outra, basta acrescentar uma entrada.
+- **Combinação sem nenhum imóvel não é indexada.** A página continua no ar com
+  o convite para chamar no WhatsApp, mas não se apresenta ao buscador e fica
+  fora do sitemap — página de catálogo vazia atrai visita que sai na hora, e
+  isso derruba a página. Cadastrou o primeiro imóvel do perfil, ela se liga
+  sozinha.
+- Cada página abre com um resumo gerado do acervo real ("5 imóveis disponíveis
+  em Corumbá-MS, de R$ 95.000 a R$ 750.000, nos bairros Centro, ..."), que é o
+  que impede páginas parecidas de terem texto idêntico.
+- Bloco "Buscas relacionadas" no rodapé de cada categoria e "Buscas mais
+  procuradas" em `/imoveis`: as páginas novas não estão no menu, e página que
+  nenhuma outra referencia é lida como pouco importante.
 
 **Conteúdo**
 - Titles e descrições por categoria, escritos na forma como a busca local é

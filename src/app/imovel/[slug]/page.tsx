@@ -12,7 +12,12 @@ import { RelatedProperties } from '@/components/property/related-properties'
 import { ShareButtons } from '@/components/property/share-buttons'
 import { PurposeBadge, StatusBadge, OpportunityBadge } from '@/components/property/property-badge'
 import { getPropertyBySlug } from '@/data/services/properties'
-import { formatPrice, formatArea, formatDateLong } from '@/lib/format'
+import {
+  formatPrice,
+  formatArea,
+  formatDateLong,
+  isRealNeighborhood,
+} from '@/lib/format'
 import { SITE_NAME, PROPERTY_TYPE_LABEL } from '@/lib/constants'
 import { buildMetadata, getAbsoluteUrl } from '@/lib/metadata'
 import { JsonLd } from '@/components/shared/json-ld'
@@ -67,7 +72,14 @@ function buildDescription(property: {
     formatArea(property.builtArea || property.totalArea),
   ].filter(Boolean)
 
-  return `${typeLabel} ${purposeLabel} no bairro ${property.neighborhood}, ${property.city}-MS: ${attributes.join(', ')}. ${property.shortDescription} Fale direto com o corretor pelo WhatsApp.`.slice(
+  /// Sem bairro cadastrado a frase cai para a cidade. Escrever "no bairro A
+  /// definir" é pior que não citar bairro nenhum: aparece assim no resultado de
+  /// busca e passa a impressão de anúncio incompleto.
+  const local = isRealNeighborhood(property.neighborhood)
+    ? `no bairro ${property.neighborhood}, ${property.city}-MS`
+    : `em ${property.city}-MS`
+
+  return `${typeLabel} ${purposeLabel} ${local}: ${attributes.join(', ')}. ${property.shortDescription} Fale direto com o corretor pelo WhatsApp.`.slice(
     0,
     300,
   )
@@ -77,14 +89,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
   const property = await getPropertyBySlug(slug).catch(() => null)
 
-  /// Slug inexistente vira 404 na página; aqui só evitamos que o buscador
-  /// guarde o título genérico do layout para uma URL que não existe.
-  if (!property) {
-    return buildMetadata({
-      title: 'Imóvel não encontrado',
-      robots: { index: false, follow: true },
-    })
-  }
+  /// `notFound()` aqui, e não só no componente da página.
+  ///
+  /// A página renderiza em streaming: quando `notFound()` era chamado lá
+  /// dentro, o cabeçalho HTTP já tinha sido enviado com status 200 e o Next não
+  /// tinha mais como corrigi-lo. O resultado era um "soft 404" — a tela dizia
+  /// "Página não encontrada" mas a resposta afirmava 200 OK, e o buscador
+  /// indexava cada URL errada ou removida como página válida.
+  ///
+  /// A geração de metadados acontece antes do primeiro envio, então interromper
+  /// daqui produz o 404 de verdade.
+  if (!property) notFound()
 
   const price = formatPrice(property.price)
   const typeLabel = PROPERTY_TYPE_LABEL[property.type] ?? 'Imóvel'
@@ -96,8 +111,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   /// `absolute`: o anúncio já gasta o espaço útil do title com tipo, bairro,
   /// cidade e preço. Somar a marca no fim só empurraria o preço para além do
   /// que o buscador exibe.
+  const localTitle = isRealNeighborhood(property.neighborhood)
+    ? `${property.neighborhood}, ${property.city}-MS`
+    : `${property.city}-MS`
   const title = {
-    absolute: `${typeLabel} ${purposeLabel} em ${property.neighborhood}, ${property.city}-MS — ${price}`,
+    absolute: `${typeLabel} ${purposeLabel} em ${localTitle} — ${price}`,
   }
   const url = `/imovel/${property.slug}`
   const description = buildDescription(property)
@@ -116,7 +134,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description,
     keywords: [
       `${typeLabel} ${purposeLabel} ${property.city}`,
-      `imóvel ${property.neighborhood} ${property.city}`,
+      ...(isRealNeighborhood(property.neighborhood)
+        ? [`imóvel ${property.neighborhood} ${property.city}`]
+        : []),
       `${typeLabel} ${property.city} MS`,
       ...property.tags,
     ],
@@ -135,7 +155,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           url: imageUrl,
           width: cover?.width || 1200,
           height: cover?.height || 800,
-          alt: `${property.title} — ${property.neighborhood}, ${property.city}-MS`,
+          alt: `${property.title} — ${localTitle}`,
         },
       ],
     },
@@ -185,7 +205,9 @@ export default async function ImovelPage({ params }: PageProps) {
               {property.title}
             </h1>
             <p className="mt-1 text-cinza-600">
-              {property.city} — {property.neighborhood}
+              {property.city}
+              {isRealNeighborhood(property.neighborhood) &&
+                ` — ${property.neighborhood}`}
             </p>
             <p className="mt-1 text-xs text-cinza-600/80">
               Publicado em{' '}
@@ -241,7 +263,9 @@ export default async function ImovelPage({ params }: PageProps) {
                 Localização
               </h2>
               <p className="text-sm text-cinza-600">
-                {property.neighborhood}, {property.city} — MS
+                {isRealNeighborhood(property.neighborhood) &&
+                  `${property.neighborhood}, `}
+                {property.city} — MS
               </p>
               {/* Links internos para a cidade e o tipo. Servem ao visitante que
                   quer ver opções parecidas e, ao mesmo tempo, distribuem

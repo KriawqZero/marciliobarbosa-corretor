@@ -29,6 +29,19 @@ const nextConfig: NextConfig = {
   // `/imoveis/`). Fixar a forma sem barra e redirecionar a outra evita que o
   // buscador trate as duas como conteúdo duplicado.
   trailingSlash: false,
+  async rewrites() {
+    // A especificação do IndexNow recomenda a chave em `/{chave}.txt` na raiz.
+    // Servir só `/indexnow-key.txt` e declarar `keyLocation` também é válido,
+    // mas exigiria uma rota curinga na raiz — que capturaria as URLs dos
+    // imóveis. Este atalho entrega as duas formas sem esse risco.
+    //
+    // O valor é lido no build; se a variável não existir lá, o atalho não é
+    // criado e a notificação continua funcionando pelo `keyLocation`.
+    const key = process.env.INDEXNOW_KEY
+    if (!key || !/^[A-Za-z0-9-]{8,128}$/.test(key)) return []
+
+    return [{ source: `/${key}.txt`, destination: '/indexnow-key.txt' }]
+  },
   async headers() {
     return [
       {

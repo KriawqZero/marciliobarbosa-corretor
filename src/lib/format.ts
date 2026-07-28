@@ -1,3 +1,19 @@
+/// O cadastro grava `'A definir'` quando o bairro não é informado — é rótulo de
+/// ausência, não um bairro. Sem esta checagem o site publica "Casa à venda em A
+/// definir, Corumbá-MS" no título do resultado de busca e no endereço do
+/// JSON-LD, que é pior do que simplesmente não citar o bairro.
+export function isRealNeighborhood(
+  name: string | null | undefined,
+): name is string {
+  if (!name) return false
+  const normalized = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+  return normalized.length > 0 && normalized !== 'a definir'
+}
+
 export function formatPrice(value: number): string {
   return value.toLocaleString('pt-BR', {
     style: 'currency',

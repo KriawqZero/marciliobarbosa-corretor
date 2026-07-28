@@ -1,7 +1,24 @@
 import type { MetadataRoute } from 'next'
 import { getProperties } from '@/data/services/properties'
-import { VALID_CATEGORIES } from '@/lib/constants'
+import { CATEGORIES, VALID_CATEGORIES } from '@/lib/constants'
 import { SITE_URL, getAbsoluteUrl } from '@/lib/metadata'
+import type { Property, PropertyFilter } from '@/types'
+
+/// Mesma regra de filtragem do banco, aplicada em memória. As categorias usam
+/// só estes quatro campos; os outros do `PropertyFilter` vêm da URL e nunca de
+/// uma categoria.
+function matchesFilter(property: Property, filter: PropertyFilter): boolean {
+  if (filter.purpose && property.purpose !== filter.purpose) return false
+  if (filter.type && property.type !== filter.type) return false
+  if (filter.citySlug && property.citySlug !== filter.citySlug) return false
+  if (
+    filter.specialOpportunity !== undefined &&
+    property.specialOpportunity !== filter.specialOpportunity
+  ) {
+    return false
+  }
+  return true
+}
 
 /// Gerado a cada requisição, de propósito.
 ///
@@ -56,8 +73,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ]
 
-  const categoryPages: MetadataRoute.Sitemap = VALID_CATEGORIES.map((cat) => ({
-    url: `${SITE_URL}/imoveis/${cat}`,
+  /// Só entram as categorias que têm ao menos um imóvel.
+  ///
+  /// Sitemap é uma recomendação de leitura: listar página vazia gasta a cota do
+  /// robô e ensina que o sitemap deste site aponta para lugar sem conteúdo. A
+  /// contagem sai da lista já carregada acima — nenhuma consulta a mais.
+  const categoryPages: MetadataRoute.Sitemap = VALID_CATEGORIES.filter((slug) =>
+    properties.some((property) => matchesFilter(property, CATEGORIES[slug].filter)),
+  ).map((slug) => ({
+    url: `${SITE_URL}/imoveis/${slug}`,
     lastModified: catalogLastModified,
     changeFrequency: 'daily' as const,
     priority: 0.8,

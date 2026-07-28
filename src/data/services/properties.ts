@@ -2,6 +2,7 @@
 import { unstable_cache } from 'next/cache'
 import type { Property, PropertyFilter, CategoryMeta, PaginatedProperties } from '@/types'
 import { CATEGORIES, PROPERTIES_CACHE_TAG } from '@/lib/constants'
+import { isRealNeighborhood } from '@/lib/format'
 import { env } from 'process'
 import { PrismaClient } from '@/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
@@ -379,6 +380,90 @@ export async function getPropertiesCount(
   }
 
   return getPropertiesCountCached(filter)
+}
+
+export interface CategoryFacets {
+  total: number
+  minPrice: number | null
+  maxPrice: number | null
+  neighborhoods: string[]
+}
+
+/// Resumo de uma categoria: quantos imóveis, de que faixa de preço e em quais
+/// bairros.
+///
+/// Serve a duas coisas ao mesmo tempo. Para o visitante, é a resposta imediata
+/// à pergunta "tem o que eu procuro e cabe no meu bolso?". Para o buscador, é o
+/// único texto da página que muda conforme o acervo — sem ele, páginas de
+/// categoria parecidas ficam com conteúdo quase idêntico entre si.
+///
+/// Uma consulta só, trazendo apenas as duas colunas necessárias, e passando
+/// pelo mesmo cache das demais leituras do catálogo.
+const getCategoryFacetsCached = unstable_cache(
+  async (filter?: PropertyFilter): Promise<CategoryFacets> => {
+    const rows = await prisma!.property.findMany({
+      where: buildPrismaWhere(filter),
+      select: { price: true, neighborhood: true },
+    })
+
+    if (rows.length === 0) {
+      return { total: 0, minPrice: null, maxPrice: null, neighborhoods: [] }
+    }
+
+    const prices = rows.map((row) => Number(row.price)).filter(Number.isFinite)
+    const neighborhoods = Array.from(
+      new Set(
+        rows
+          .map((row) => row.neighborhood?.trim())
+          .filter(isRealNeighborhood),
+      ),
+    ).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+
+    return {
+      total: rows.length,
+      minPrice: prices.length > 0 ? Math.min(...prices) : null,
+      maxPrice: prices.length > 0 ? Math.max(...prices) : null,
+      neighborhoods,
+    }
+  },
+  ['category-facets'],
+  CACHE_OPTIONS,
+)
+
+export async function getCategoryFacets(
+  filter?: PropertyFilter,
+): Promise<CategoryFacets> {
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
+  return getCategoryFacetsCached(filter)
+}
+
+/// Bairros já usados no acervo, para a lista de sugestões do cadastro.
+///
+/// A lista sai do próprio banco, e não de um cadastro fixo de bairros: assim
+/// não há nome inventado, e ela melhora sozinha conforme os imóveis são
+/// cadastrados.
+const getUsedNeighborhoodsCached = unstable_cache(
+  async (citySlug?: string): Promise<string[]> => {
+    const rows = await prisma!.property.findMany({
+      where: citySlug ? { citySlug } : undefined,
+      select: { neighborhood: true },
+      distinct: ['neighborhood'],
+    })
+
+    return rows
+      .map((row) => row.neighborhood?.trim())
+      .filter(isRealNeighborhood)
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  },
+  ['used-neighborhoods'],
+  CACHE_OPTIONS,
+)
+
+export async function getUsedNeighborhoods(
+  citySlug?: string,
+): Promise<string[]> {
+  if (!prisma) return Promise.reject(new Error('Database not configured'))
+  return getUsedNeighborhoodsCached(citySlug)
 }
 
 const getPropertiesPagedCached = unstable_cache(

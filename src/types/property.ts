@@ -65,6 +65,14 @@ export interface CategoryMeta {
   seoTitle?: string
   seoDescription?: string
   keywords?: string[]
+  /// Texto de abertura da página, em parágrafos. Uma página de catálogo sem
+  /// texto próprio é só uma grade de fotos: não há o que ler nem o que
+  /// ranquear. Estes parágrafos são a única parte da página que fala a língua
+  /// de quem está pesquisando.
+  intro?: string[]
+  /// Categoria derivada de outra (ex.: "casas à venda em Corumbá" nasce de
+  /// "casas"). Serve para montar a trilha de navegação e os links internos.
+  parent?: string
   /// Mensagem quando a categoria não tem nenhum imóvel. As categorias vazias
   /// continuam visíveis, então a página precisa explicar e dar uma saída.
   emptyTitle?: string
