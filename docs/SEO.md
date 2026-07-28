@@ -108,7 +108,7 @@ buscador trata como dado errado.
 
 | Constante | Situação |
 |---|---|
-| `BROKER_POSTAL_CODE` | ✅ `79304-070` |
+| `BROKER_POSTAL_CODE` | ✅ `79311-030` |
 | `BROKER_LATITUDE` / `BROKER_LONGITUDE` | ✅ `-19.0249553` / `-57.6424487` |
 | `BROKER_SOCIAL_PROFILES` | ✅ Facebook e Instagram |
 | `BROKER_OPENING_HOURS` | ✅ Seg–sex 07:00–17:00, sáb 07:00–12:00 |
@@ -173,6 +173,28 @@ curl "https://marciliobarbosacorretor.com.br/api/bairros?cidade=corumba"
 
 O passo que ainda depende do app: trocar o campo de texto por um seletor
 alimentado por esse endpoint, com opção de digitar um bairro novo.
+
+---
+
+## 4.1.1. Vídeo do hero — decisão tomada, não pendência
+
+O embed do YouTube no fundo da home responde por ~1,6 MB dos 2,4 MB que a
+página baixa no celular. Uma auditoria externa pediu para removê-lo ou trocá-lo
+por um facade com botão de play.
+
+**Fica como está, por decisão do dono do site:** o vídeo é um dos poucos
+elementos que dão identidade visual à página, e isso não se mede em bytes.
+
+Se em algum momento o custo passar a doer, as alternativas em ordem de menor
+impacto visual são: (1) manter o vídeo só em desktop, deixando o gradiente — que
+já é o fallback — no celular; (2) trocar o vídeo por uma imagem estática do
+Pantanal em telas pequenas; (3) facade com clique. Nenhuma delas deve ser
+aplicada sem combinar antes.
+
+Mitigações que já existem e devem ser preservadas: o iframe só monta depois do
+primeiro paint (`requestIdleCallback`), não monta quando o visitante pede menos
+animação (`prefers-reduced-motion`) nem quando o navegador declara economia de
+dados (`saveData`), e só aparece depois que o player confirma que está tocando.
 
 ---
 
@@ -254,9 +276,6 @@ atendimento, sem endereço exibido.
   nenhuma outra referencia é lida como pouco importante.
 
 **Desempenho e cache**
-- O embed do YouTube no hero não carrega mais em celular. Media do briefing: a
-  home baixava 2.376.963 bytes, dos quais ~1.597.306 (67%) eram do player. Ele
-  agora é exclusivo de desktop ≥1024px com rede declarada rápida.
 - Fichas de imóvel servidas do cache (`s-maxage=600`), em vez de `no-store` a
   cada visita. Detalhe que custou medição: `revalidate` sozinho **não** liga o
   ISR numa rota com parâmetro dinâmico — é preciso declarar
