@@ -26,6 +26,19 @@ NEXT_PUBLIC_BING_SITE_VERIFICATION=""
 INDEXNOW_KEY=""
 ```
 
+Esta outra **já existe** no projeto e é usada pelos comandos mais adiante:
+
+```env
+# Senha das rotas de escrita: /api/imovel, /api/upload, /api/leads, /api/stats,
+# /api/user, /api/ai/generate e /api/indexnow. É a mesma que o app mobile usa
+# para cadastrar imóvel — se o app cadastra hoje, ela já está configurada.
+API_PASSWORD=""
+```
+
+Todas ficam nas variáveis de ambiente do Railway. Nenhuma vai para o
+repositório: `.env*` está no `.gitignore`, e é assim que deve continuar — quem
+tivesse acesso ao código poderia cadastrar e apagar imóveis.
+
 `NEXT_PUBLIC_SITE_URL` precisa existir **no build e no runtime**: ela entra no
 HTML gerado.
 
@@ -81,8 +94,11 @@ Funcionamento neste site:
 
 ```bash
 curl -X POST https://marciliobarbosacorretor.com.br/api/indexnow \
-  -H "Authorization: Bearer $API_PASSWORD"
+  -H "Authorization: Bearer COLE_AQUI_A_API_PASSWORD"
 ```
+
+O valor é o da variável `API_PASSWORD` no Railway (ver seção 1). `401` quer
+dizer senha errada; `{"ok": true}` quer dizer aceito.
 
 A resposta traz `status`:
 
