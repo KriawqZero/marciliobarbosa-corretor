@@ -1,4 +1,4 @@
-import { VALID_CATEGORIES } from './constants'
+import { CATEGORIES, VALID_CATEGORIES } from './constants'
 
 export function slugify(text: string): string {
   return text
@@ -45,6 +45,36 @@ export function parsePageParam(
   const parsed = Number(raw)
   if (!Number.isFinite(parsed) || parsed < 1) return 1
   return Math.floor(parsed)
+}
+
+/// Categorias vizinhas de uma categoria.
+///
+/// "Vizinha" é a que divide cidade ou tipo de imóvel com a atual — quem está
+/// vendo terrenos à venda em Corumbá provavelmente também consideraria terrenos
+/// em Ladário, ou casas em Corumbá. A ordem coloca primeiro a categoria de onde
+/// esta nasceu e as irmãs dela, que são as mais próximas.
+export function getRelatedCategorySlugs(slug: string, limit = 8): string[] {
+  const current = CATEGORIES[slug]
+  if (!current) return []
+
+  const scored = Object.values(CATEGORIES)
+    .filter((cat) => cat.slug !== slug)
+    .map((cat) => {
+      let score = 0
+      if (current.parent && cat.slug === current.parent) score += 100
+      if (current.parent && cat.parent === current.parent) score += 50
+      if (cat.parent === slug) score += 40
+      if (cat.filter.citySlug && cat.filter.citySlug === current.filter.citySlug)
+        score += 10
+      if (cat.filter.type && cat.filter.type === current.filter.type) score += 10
+      if (cat.filter.purpose && cat.filter.purpose === current.filter.purpose)
+        score += 3
+      return { slug: cat.slug, score }
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+
+  return scored.slice(0, limit).map((entry) => entry.slug)
 }
 
 /// Canônica de uma página de catálogo.

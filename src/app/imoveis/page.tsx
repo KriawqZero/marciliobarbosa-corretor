@@ -7,6 +7,7 @@ import { FilterBar } from '@/components/search/filter-bar'
 import { SortSelect } from '@/components/search/sort-select'
 import { PropertyGridSkeleton } from '@/components/shared/loading-skeleton'
 import { JsonLd } from '@/components/shared/json-ld'
+import { RelatedCategories } from '@/components/sections/related-categories'
 import { getPropertiesPaged } from '@/data/services/properties'
 import type { PropertyFilter, PropertyPurpose, PropertyType } from '@/types'
 import { Pagination } from '@/components/shared/pagination'
@@ -178,6 +179,28 @@ export default async function ImoveisPage({ searchParams }: PageProps) {
         <Suspense fallback={<PropertyGridSkeleton />}>
           <PropertyList searchParams={params} />
         </Suspense>
+
+        {/* Porta de entrada das páginas de busca combinada. Elas não estão no
+            menu; sem um bloco assim, só existiriam no sitemap — e página que
+            nenhuma outra referencia é lida pelo buscador como pouco
+            importante. */}
+        <RelatedCategories
+          current="/imoveis"
+          title="Buscas mais procuradas"
+          slugs={[
+            'casas-a-venda-em-corumba',
+            'terrenos-a-venda-em-corumba',
+            'casas-para-alugar-em-corumba',
+            'apartamentos-em-corumba',
+            'imoveis-a-venda-em-corumba',
+            'imoveis-para-alugar-em-corumba',
+            'casas-a-venda-em-ladario',
+            'terrenos-em-ladario',
+            'imoveis-a-venda-em-ladario',
+            'chacaras-e-sitios-em-corumba',
+            'pontos-comerciais-em-corumba',
+          ]}
+        />
       </Container>
     </section>
   )

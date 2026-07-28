@@ -111,7 +111,7 @@ buscador trata como dado errado.
 | `BROKER_POSTAL_CODE` | ✅ `79304-070` |
 | `BROKER_LATITUDE` / `BROKER_LONGITUDE` | ✅ `-19.0249553` / `-57.6424487` |
 | `BROKER_SOCIAL_PROFILES` | ✅ Facebook e Instagram |
-| `BROKER_OPENING_HOURS` | ✅ Segunda a sexta, 07:00–17:00 — **confirmar se atende sábado** |
+| `BROKER_OPENING_HOURS` | ✅ Seg–sex 07:00–17:00, sáb 07:00–12:00 |
 | `BROKER_FOUNDING_YEAR` | ✅ `2016` |
 | `BROKER_STREET_ADDRESS` | ⬜ **Falta:** logradouro e número |
 
@@ -183,6 +183,26 @@ Vale conferir o CEP: `79304-070` e o bairro Cristo Redentor não parecem bater
   coordenadas, metragem, quartos, banheiros, vagas, comodidades e galeria
 - `CollectionPage` + `ItemList` nas páginas de catálogo
 - `AboutPage` + `Person` e `ContactPage`
+
+**Páginas de busca combinada**
+- 15 páginas para as buscas que as pessoas realmente digitam: "casas à venda em
+  Corumbá MS", "terrenos à venda em Corumbá", "imóveis para alugar em Ladário".
+  Antes essas combinações existiam só como filtro na URL, que é marcado como
+  não-indexável de propósito.
+- Definidas em `COMBOS`, em `src/lib/constants.ts`. Cada uma vira uma categoria
+  normal: entra no sitemap, na trilha e nos dados estruturados sem código novo.
+  Para criar outra, basta acrescentar uma entrada.
+- **Combinação sem nenhum imóvel não é indexada.** A página continua no ar com
+  o convite para chamar no WhatsApp, mas não se apresenta ao buscador e fica
+  fora do sitemap — página de catálogo vazia atrai visita que sai na hora, e
+  isso derruba a página. Cadastrou o primeiro imóvel do perfil, ela se liga
+  sozinha.
+- Cada página abre com um resumo gerado do acervo real ("5 imóveis disponíveis
+  em Corumbá-MS, de R$ 95.000 a R$ 750.000, nos bairros Centro, ..."), que é o
+  que impede páginas parecidas de terem texto idêntico.
+- Bloco "Buscas relacionadas" no rodapé de cada categoria e "Buscas mais
+  procuradas" em `/imoveis`: as páginas novas não estão no menu, e página que
+  nenhuma outra referencia é lida como pouco importante.
 
 **Conteúdo**
 - Titles e descrições por categoria, escritos na forma como a busca local é

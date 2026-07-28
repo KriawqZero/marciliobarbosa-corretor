@@ -8,10 +8,17 @@ import { FilterBar } from '@/components/search/filter-bar'
 import { SortSelect } from '@/components/search/sort-select'
 import { PropertyGridSkeleton } from '@/components/shared/loading-skeleton'
 import { JsonLd } from '@/components/shared/json-ld'
-import { getPropertiesPaged } from '@/data/services/properties'
-import { CATEGORIES, SITE_NAME } from '@/lib/constants'
+import {
+  getCategoryFacets,
+  getPropertiesCount,
+  getPropertiesPaged,
+} from '@/data/services/properties'
+import { CATEGORIES, CITY_GEO, SITE_NAME } from '@/lib/constants'
+import { CategoryIntro } from '@/components/sections/category-intro'
+import { RelatedCategories } from '@/components/sections/related-categories'
 import {
   buildListingCanonical,
+  getRelatedCategorySlugs,
   hasListingFilters,
   isValidCategory,
   parsePageParam,
@@ -59,6 +66,18 @@ export async function generateMetadata({
   const title = `${cat.seoTitle ?? cat.title}${pageSuffix}`
   const description = cat.seoDescription ?? cat.description
 
+  /// Categoria sem nenhum imóvel não se apresenta ao buscador.
+  ///
+  /// Uma página de catálogo vazia é conteúdo raso: promete "casas à venda em
+  /// Corumbá" e entrega uma lista em branco. Indexada, atrai visita que sai na
+  /// hora — e visita que sai na hora é o sinal que derruba a página. Ela
+  /// continua no ar para quem chega por link ou pelo menu, com o convite para
+  /// chamar no WhatsApp; só não entra no índice.
+  ///
+  /// Quando o primeiro imóvel do perfil for cadastrado, a página se liga
+  /// sozinha na revalidação.
+  const total = await getPropertiesCount(cat.filter).catch(() => 0)
+
   return buildMetadata({
     path: basePath,
     title,
@@ -67,7 +86,7 @@ export async function generateMetadata({
     alternates: {
       canonical: buildListingCanonical(basePath, page),
     },
-    robots: filtered ? NOINDEX_FOLLOW_ROBOTS : undefined,
+    robots: filtered || total === 0 ? NOINDEX_FOLLOW_ROBOTS : undefined,
     openGraph: {
       title: `${cat.seoTitle ?? cat.title} | ${SITE_NAME}`,
       description,
@@ -171,6 +190,26 @@ async function CategoryPropertyList({
   )
 }
 
+/// Texto de abertura com o resumo do acervo. Fica em componente próprio para
+/// não segurar a grade: a consulta do resumo roda em paralelo com a da lista.
+async function CategoryHeader({ categoria }: { categoria: string }) {
+  const cat = CATEGORIES[categoria]
+  const facets = await getCategoryFacets(cat.filter).catch(() => ({
+    total: 0,
+    minPrice: null,
+    maxPrice: null,
+    neighborhoods: [],
+  }))
+
+  const cidade = cat.filter.citySlug
+    ? `em ${CITY_GEO[cat.filter.citySlug]?.name ?? 'Corumbá'}-MS`
+    : 'em Corumbá-MS e Ladário-MS'
+
+  return (
+    <CategoryIntro paragraphs={cat.intro} facets={facets} location={cidade} />
+  )
+}
+
 export default async function CategoriaPage({ params, searchParams }: PageProps) {
   const { categoria } = await params
   const search = await searchParams
@@ -179,22 +218,33 @@ export default async function CategoriaPage({ params, searchParams }: PageProps)
 
   const cat = CATEGORIES[categoria]
 
+  /// Trilha com o nível intermediário quando a categoria nasce de outra:
+  /// "Início > Imóveis > Casas em Corumbá > Casas à venda em Corumbá". Diz ao
+  /// visitante e ao buscador onde a página está dentro do catálogo.
+  const parent = cat.parent ? CATEGORIES[cat.parent] : undefined
+
   return (
     <section className="py-8 lg:py-12">
       <Container>
         <Breadcrumbs
           items={[
             { label: 'Imóveis', href: '/imoveis' },
+            ...(parent
+              ? [{ label: parent.title, href: `/imoveis/${parent.slug}` }]
+              : []),
             { label: cat.title },
           ]}
         />
 
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-cinza-900 sm:text-3xl">
             {cat.title}
           </h1>
-          <p className="mt-1 text-cinza-600">{cat.description}</p>
         </div>
+
+        <Suspense>
+          <CategoryHeader categoria={categoria} />
+        </Suspense>
 
         <div className="mb-8">
           <Suspense>
@@ -212,6 +262,11 @@ export default async function CategoriaPage({ params, searchParams }: PageProps)
             emptyDescription={cat.emptyDescription}
           />
         </Suspense>
+
+        <RelatedCategories
+          current={categoria}
+          slugs={getRelatedCategorySlugs(categoria)}
+        />
       </Container>
     </section>
   )
