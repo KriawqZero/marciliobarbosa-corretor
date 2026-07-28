@@ -108,7 +108,7 @@ buscador trata como dado errado.
 
 | Constante | Situação |
 |---|---|
-| `BROKER_POSTAL_CODE` | ✅ `79304-070` |
+| `BROKER_POSTAL_CODE` | ✅ `79311-030` |
 | `BROKER_LATITUDE` / `BROKER_LONGITUDE` | ✅ `-19.0249553` / `-57.6424487` |
 | `BROKER_SOCIAL_PROFILES` | ✅ Facebook e Instagram |
 | `BROKER_OPENING_HOURS` | ✅ Seg–sex 07:00–17:00, sáb 07:00–12:00 |
@@ -176,6 +176,49 @@ alimentado por esse endpoint, com opção de digitar um bairro novo.
 
 ---
 
+## 4.1.1. Vídeo do hero — decisão tomada, não pendência
+
+O embed do YouTube no fundo da home responde por ~1,6 MB dos 2,4 MB que a
+página baixa no celular. Uma auditoria externa pediu para removê-lo ou trocá-lo
+por um facade com botão de play.
+
+**Fica como está, por decisão do dono do site:** o vídeo é um dos poucos
+elementos que dão identidade visual à página, e isso não se mede em bytes.
+
+Se em algum momento o custo passar a doer, as alternativas em ordem de menor
+impacto visual são: (1) manter o vídeo só em desktop, deixando o gradiente — que
+já é o fallback — no celular; (2) trocar o vídeo por uma imagem estática do
+Pantanal em telas pequenas; (3) facade com clique. Nenhuma delas deve ser
+aplicada sem combinar antes.
+
+Mitigações que já existem e devem ser preservadas: o iframe só monta depois do
+primeiro paint (`requestIdleCallback`), não monta quando o visitante pede menos
+animação (`prefers-reduced-motion`) nem quando o navegador declara economia de
+dados (`saveData`), e só aparece depois que o player confirma que está tocando.
+
+---
+
+## 4.2. Fora do código — só o dono resolve
+
+| O quê | Por quê |
+|---|---|
+| **Domínio `www`** | `www.marciliobarbosacorretor.com.br` responde **404 da Vercel** (`x-vercel-error: DEPLOYMENT_NOT_FOUND`). É um CNAME órfão apontando para um deploy que não existe mais; o site real está no Railway. Todo link externo, cartão de visita ou citação com `www` perde 100% do tráfego e não transfere autoridade. Remover o CNAME no provedor de DNS e criar 301 de `www` para o domínio sem `www`. |
+| **Perfil da Empresa no Google** | Maior alavanca de busca local que existe e não é código. Configurar como *service-area business* (Corumbá e Ladário), categoria "Corretor de imóveis", NAP idêntico ao site. Depois: colar a URL do perfil em `BROKER_SOCIAL_PROFILES` para entrar no `sameAs`. |
+| **Avaliações** | Enviar o link de avaliação por WhatsApp após cada negócio fechado. Cadência constante pesa mais que volume de uma vez. |
+| **Brotli** | O servidor entrega gzip mesmo quando o navegador aceita `br`. É configuração de hospedagem. |
+
+### ⚠️ Endereço no JSON-LD
+
+O site declara `Rua Marechal Antônio Maria Coelho, 3213, Corumbá-MS, 79311-030`
+no JSON-LD, mas **nenhuma página exibe esse endereço ao visitante**. Se for
+endereço residencial, vale decidir conscientemente se deve ficar público — o
+JSON-LD é lido por qualquer robô, e o Perfil da Empresa tornaria isso ainda
+mais visível. Alternativa: manter só cidade, estado e CEP (basta esvaziar
+`BROKER_STREET_ADDRESS`) e configurar o GBP como negócio de área de
+atendimento, sem endereço exibido.
+
+---
+
 ## 5. O que já está implementado
 
 **Rastreamento e descoberta**
@@ -231,6 +274,24 @@ alimentado por esse endpoint, com opção de digitar um bairro novo.
 - Bloco "Buscas relacionadas" no rodapé de cada categoria e "Buscas mais
   procuradas" em `/imoveis`: as páginas novas não estão no menu, e página que
   nenhuma outra referencia é lida como pouco importante.
+
+**Desempenho e cache**
+- Fichas de imóvel servidas do cache (`s-maxage=600`), em vez de `no-store` a
+  cada visita. Detalhe que custou medição: `revalidate` sozinho **não** liga o
+  ISR numa rota com parâmetro dinâmico — é preciso declarar
+  `generateStaticParams`. Devolvendo lista vazia, a rota entra no pipeline
+  estático sem pré-renderizar nada no build, então o build segue rodando sem
+  banco.
+- `/imoveis/[categoria]` continua dinâmica: ela lê filtros da URL
+  (`searchParams`), e isso impede o cache de página. O cache de dados
+  (`unstable_cache`) já cobre a parte cara.
+
+**Segurança e conformidade**
+- `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy` e `Permissions-Policy` na origem.
+- `/privacidade` publicada, linkada no rodapé e ao lado do formulário de
+  contato. Sem ela, ativar o formulário seria coletar dado pessoal sem base
+  legal declarada.
 
 **Conteúdo**
 - Titles e descrições por categoria, escritos na forma como a busca local é

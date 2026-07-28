@@ -42,6 +42,11 @@ export function RelatedCategories({
           <li key={cat.slug}>
             <Link
               href={`/imoveis/${cat.slug}`}
+              /// Sem prefetch: são muitos links secundários numa página só, e
+              /// cada um disparava uma requisição `_rsc=` assim que entrava na
+              /// viewport — banda gasta antes de qualquer intenção do
+              /// visitante. O destino continua a um toque de distância.
+              prefetch={false}
               className="inline-flex rounded-full border border-cinza-200 px-3.5 py-1.5 text-sm text-cinza-600 transition-colors hover:border-azul-medio hover:text-azul-escuro"
             >
               {cat.title}

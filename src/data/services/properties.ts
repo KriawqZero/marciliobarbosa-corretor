@@ -2,7 +2,7 @@
 import { unstable_cache } from 'next/cache'
 import type { Property, PropertyFilter, CategoryMeta, PaginatedProperties } from '@/types'
 import { CATEGORIES, PROPERTIES_CACHE_TAG } from '@/lib/constants'
-import { isRealNeighborhood } from '@/lib/format'
+import { dedupeNeighborhoods } from '@/lib/format'
 import { env } from 'process'
 import { PrismaClient } from '@/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
@@ -411,13 +411,13 @@ const getCategoryFacetsCached = unstable_cache(
     }
 
     const prices = rows.map((row) => Number(row.price)).filter(Number.isFinite)
-    const neighborhoods = Array.from(
-      new Set(
-        rows
-          .map((row) => row.neighborhood?.trim())
-          .filter(isRealNeighborhood),
-      ),
-    ).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+
+    /// Junta as grafias equivalentes na leitura, e não só na gravação: os
+    /// imóveis já cadastrados continuam com "Centro", "Centro Corumbá" e
+    /// "Centro de Corumbá" no banco, e a página listava os três.
+    const neighborhoods = dedupeNeighborhoods(
+      rows.map((row) => row.neighborhood ?? ''),
+    )
 
     return {
       total: rows.length,
@@ -450,10 +450,7 @@ const getUsedNeighborhoodsCached = unstable_cache(
       distinct: ['neighborhood'],
     })
 
-    return rows
-      .map((row) => row.neighborhood?.trim())
-      .filter(isRealNeighborhood)
-      .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+    return dedupeNeighborhoods(rows.map((row) => row.neighborhood ?? ''))
   },
   ['used-neighborhoods'],
   CACHE_OPTIONS,

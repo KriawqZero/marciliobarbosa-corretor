@@ -118,7 +118,7 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     ],
     filter: { purpose: 'venda' },
     intro: [
-      'Tudo que está à venda em Corumbá-MS e Ladário-MS: casas, apartamentos, terrenos, pontos comerciais e áreas rurais. Os valores estão em cada anúncio, junto com as fotos e as características do imóvel.',
+      'Tudo que está à venda em Corumbá-MS e Ladário-MS: casas, apartamentos, terrenos, pontos comerciais e áreas rurais. As duas cidades ficam coladas, e quem procura numa quase sempre acaba olhando a outra.',
       'Além de mostrar o imóvel, eu acompanho a negociação até o fim: documentação, proposta e, quando for o caso, o processo de financiamento. Se você ainda não sabe quanto consegue financiar, me chame no WhatsApp que a gente vê isso antes de sair visitando.',
     ],
     emptyTitle: 'Ainda não tenho imóveis à venda publicados',
@@ -140,7 +140,7 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     ],
     filter: { purpose: 'aluguel' },
     intro: [
-      'Imóveis para alugar em Corumbá-MS e Ladário-MS. Os valores mostrados são mensais, e cada anúncio traz o bairro, o tamanho e as fotos do imóvel.',
+      'Imóveis para alugar em Corumbá-MS e Ladário-MS. Todos os valores desta página são mensais.',
       'A locação na região gira rápido e boa parte nem chega a ser anunciada. Se não encontrar o que procura aqui, me chame no WhatsApp dizendo o bairro e o valor que cabe no seu orçamento — eu procuro e aviso você.',
     ],
     emptyTitle: 'Ainda não tenho imóveis para alugar publicados',
@@ -162,7 +162,7 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     ],
     filter: { type: 'casa' },
     intro: [
-      'Casas em Corumbá-MS e Ladário-MS, para comprar ou alugar. Cada anúncio traz o bairro, o número de quartos e banheiros, a área do terreno e da construção, as vagas de garagem e as fotos do imóvel — para você já chegar na conversa sabendo o que vai ver.',
+      'Casas em Corumbá-MS e Ladário-MS, para comprar ou alugar. As duas cidades são vizinhas e o trajeto entre elas é curto, então vale olhar as duas antes de decidir.',
       'O atendimento é direto comigo, sem intermediário e sem cadastro: você escolhe a casa, clica no WhatsApp e a gente marca a visita. Se o que você procura não estiver na lista, me chame mesmo assim — parte das casas da região é negociada antes de chegar ao site.',
     ],
     emptyTitle: 'Ainda não tenho casas publicadas',
@@ -184,7 +184,7 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     ],
     filter: { type: 'terreno' },
     intro: [
-      'Terrenos e lotes em Corumbá-MS e Ladário-MS, com a metragem e o bairro de cada um. Serve tanto para quem vai construir a própria casa quanto para quem procura terreno como investimento na região.',
+      'Terrenos e lotes em Corumbá-MS e Ladário-MS. Serve tanto para quem vai construir a própria casa quanto para quem procura terreno como investimento na região.',
       'Antes de fechar, eu ajudo a conferir a documentação e a situação do lote. Me chame no WhatsApp dizendo a região e o tamanho que você procura, e eu aviso quando aparecer algo no perfil.',
     ],
     emptyTitle: 'Ainda não tenho terrenos publicados',
@@ -249,9 +249,9 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'corumba',
     title: 'Imóveis em Corumbá',
     description: 'Todos os imóveis disponíveis em Corumbá-MS',
-    seoTitle: 'Imóveis em Corumbá - MS: Casas, Terrenos e Apartamentos',
+    seoTitle: 'Imóveis em Corumbá - MS: Casas, Terrenos e Áreas Rurais',
     seoDescription:
-      'Imóveis em Corumbá-MS para comprar e alugar: casas, terrenos, apartamentos, pontos comerciais e áreas rurais. Corretor local com atendimento no WhatsApp.',
+      'Imóveis em Corumbá-MS para comprar e alugar: casas, terrenos, pontos comerciais e áreas rurais. Corretor local registrado, com atendimento no WhatsApp.',
     keywords: [
       'imóveis Corumbá MS',
       'corretor de imóveis Corumbá',
@@ -271,9 +271,9 @@ export const CATEGORIES: Record<string, CategoryMeta> = {
     slug: 'ladario',
     title: 'Imóveis em Ladário',
     description: 'Todos os imóveis disponíveis em Ladário-MS',
-    seoTitle: 'Imóveis em Ladário - MS: Casas, Terrenos e Apartamentos',
+    seoTitle: 'Imóveis em Ladário - MS',
     seoDescription:
-      'Imóveis em Ladário-MS para comprar e alugar: casas, terrenos, apartamentos e áreas rurais. Corretor local com atendimento direto pelo WhatsApp.',
+      'Imóveis disponíveis em Ladário-MS, cidade vizinha a Corumbá. Corretor local registrado, com atendimento direto pelo WhatsApp.',
     keywords: [
       'imóveis Ladário MS',
       'corretor de imóveis Ladário',
@@ -356,7 +356,7 @@ const COMBOS: ComboSpec[] = [
     filter: { purpose: 'venda', citySlug: 'corumba' },
     parent: 'corumba',
     intro: [
-      'Todos os imóveis que tenho à venda em Corumbá-MS, reunidos numa página só. Cada anúncio mostra o valor, o bairro, o tamanho e as fotos.',
+      'Todos os imóveis que tenho à venda em Corumbá-MS reunidos numa página só: casas, apartamentos, terrenos, pontos comerciais e áreas rurais.',
       'Sou corretor registrado e atendo Corumbá e Ladário. Acompanho a negociação do início ao fim, incluindo documentação e financiamento quando for o caso.',
     ],
   },
@@ -384,7 +384,7 @@ const COMBOS: ComboSpec[] = [
     filter: { purpose: 'aluguel', citySlug: 'corumba' },
     parent: 'corumba',
     intro: [
-      'Imóveis para alugar em Corumbá-MS, com o valor mensal em cada anúncio.',
+      'Imóveis para alugar em Corumbá-MS. Todos os valores desta página são mensais.',
       'A locação em Corumbá gira rápido e boa parte nem chega a ser anunciada. Se não achar o que procura, me chame no WhatsApp com o bairro e o valor que cabe no seu orçamento.',
     ],
   },
@@ -398,7 +398,7 @@ const COMBOS: ComboSpec[] = [
     filter: { purpose: 'aluguel', citySlug: 'ladario' },
     parent: 'ladario',
     intro: [
-      'Imóveis para alugar em Ladário-MS, com o valor mensal em cada anúncio.',
+      'Imóveis para alugar em Ladário-MS. Todos os valores desta página são mensais.',
       'Atendo Ladário e Corumbá. Me chame no WhatsApp dizendo o bairro e o orçamento que eu procuro para você.',
     ],
   },
@@ -414,7 +414,7 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'casa', citySlug: 'corumba' },
     parent: 'corumba',
     intro: [
-      'Casas em Corumbá-MS, para compra e para locação. Cada anúncio traz o bairro, os quartos e banheiros, a área do terreno e da construção, as vagas de garagem e as fotos.',
+      'Casas em Corumbá-MS, para compra e para locação. A cidade é compacta, mas a diferença de preço entre bairros vizinhos costuma ser grande — vale comparar antes de fechar.',
       'Se você já sabe se quer comprar ou alugar, use as páginas específicas de casas à venda ou casas para alugar em Corumbá, logo abaixo desta lista.',
     ],
   },
@@ -428,8 +428,8 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'casa', citySlug: 'ladario' },
     parent: 'ladario',
     intro: [
-      'Casas em Ladário-MS, para compra e para locação, com bairro, tamanho e fotos em cada anúncio.',
-      'Ladário costuma ter casa com preço mais acessível que Corumbá, e as duas cidades são vizinhas. Se o deslocamento não for problema, vale comparar com as casas em Corumbá.',
+      'Casas em Ladário-MS, para compra e para locação. A cidade é pequena e fica colada em Corumbá: muita gente mora aqui e trabalha lá.',
+      'Se o deslocamento diário não for problema, vale comparar com as casas em Corumbá antes de decidir. Atendo as duas cidades, então me chame no WhatsApp que eu mostro as opções lado a lado.',
     ],
   },
   {
@@ -442,7 +442,7 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'terreno', citySlug: 'corumba' },
     parent: 'corumba',
     intro: [
-      'Terrenos e lotes em Corumbá-MS, com a metragem e o bairro de cada um. Serve para quem vai construir e para quem procura terreno como investimento.',
+      'Terrenos e lotes em Corumbá-MS. Em terreno, o que costuma pesar mais no preço não é o tamanho e sim a rua: água, esgoto e asfalto mudam bastante o valor.',
       'Antes de fechar, eu ajudo a conferir a documentação e a situação do lote. Me chame no WhatsApp com a região e o tamanho que você procura.',
     ],
   },
@@ -456,7 +456,7 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'terreno', citySlug: 'ladario' },
     parent: 'ladario',
     intro: [
-      'Terrenos e lotes em Ladário-MS, com metragem e bairro em cada anúncio.',
+      'Terrenos e lotes em Ladário-MS, para construir ou para investir.',
       'Ajudo a conferir a documentação antes de fechar. Me chame no WhatsApp dizendo a região e o tamanho que procura.',
     ],
   },
@@ -470,7 +470,7 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'apartamento', citySlug: 'corumba' },
     parent: 'corumba',
     intro: [
-      'Apartamentos em Corumbá-MS, para compra e para locação, com quartos, área e bairro em cada anúncio.',
+      'Apartamentos em Corumbá-MS, para compra e para locação. É a opção de quem quer menos manutenção que uma casa e prefere ficar perto do centro.',
       'O estoque de apartamento em Corumbá é pequeno e roda rápido. Se não achar o que procura, me chame no WhatsApp que eu aviso assim que aparecer um no seu perfil.',
     ],
   },
@@ -484,7 +484,7 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'rural', citySlug: 'corumba' },
     parent: 'rural',
     intro: [
-      'Chácaras, sítios e áreas rurais na região de Corumbá-MS, com a área de cada um em hectares ou metros quadrados.',
+      'Chácaras, sítios e áreas rurais na região de Corumbá-MS. As áreas maiores aparecem em hectares; os lotes menores, em metros quadrados.',
       'Imóvel rural costuma ter particularidade de documentação e de acesso. Me chame no WhatsApp antes de visitar que eu explico o que conferir em cada caso.',
     ],
   },
@@ -514,7 +514,7 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'casa', purpose: 'venda', citySlug: 'corumba' },
     parent: 'casas-em-corumba',
     intro: [
-      'Casas à venda em Corumbá-MS. Cada anúncio traz o valor, o bairro, os quartos e banheiros, a área e as fotos da casa.',
+      'Casas à venda em Corumbá-MS. Antes de escolher, vale pensar na distância até o centro, o trabalho e a escola das crianças: a cidade é compacta, mas os bairros mais afastados mudam bastante o dia a dia.',
       'Acompanho a compra do início ao fim: proposta, documentação e financiamento. Se você ainda não sabe quanto consegue financiar, me chame no WhatsApp que a gente vê isso antes de sair visitando.',
     ],
   },
@@ -528,8 +528,8 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'casa', purpose: 'venda', citySlug: 'ladario' },
     parent: 'casas-em-ladario',
     intro: [
-      'Casas à venda em Ladário-MS, com valor, bairro, tamanho e fotos em cada anúncio.',
-      'Acompanho documentação e financiamento. Se o deslocamento até Corumbá não for problema, vale comparar também com as casas à venda em Corumbá.',
+      'Casas à venda em Ladário-MS. A cidade fica colada em Corumbá e o trajeto entre as duas é curto, então vale comparar as opções nas duas antes de decidir.',
+      'Acompanho a compra do início ao fim: proposta, documentação e financiamento. Me chame no WhatsApp para agendar a visita.',
     ],
   },
   {
@@ -542,7 +542,7 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'casa', purpose: 'aluguel', citySlug: 'corumba' },
     parent: 'casas-em-corumba',
     intro: [
-      'Casas para alugar em Corumbá-MS. Os valores mostrados são mensais.',
+      'Casas para alugar em Corumbá-MS. Todos os valores desta página são mensais.',
       'A locação de casa em Corumbá sai rápido e nem tudo chega ao site. Me chame no WhatsApp com o bairro e o valor que cabe no seu orçamento que eu procuro para você.',
     ],
   },
@@ -556,7 +556,7 @@ const COMBOS: ComboSpec[] = [
     filter: { type: 'terreno', purpose: 'venda', citySlug: 'corumba' },
     parent: 'terrenos-em-corumba',
     intro: [
-      'Terrenos à venda em Corumbá-MS, com a metragem, o bairro e o valor de cada lote.',
+      'Terrenos à venda em Corumbá-MS, para construir ou para investir. O que costuma decidir o preço é a rua e a infraestrutura em volta, mais do que a metragem.',
       'Ajudo a conferir a documentação e a situação do terreno antes de fechar. Me chame no WhatsApp com a região e o tamanho que você procura.',
     ],
   },

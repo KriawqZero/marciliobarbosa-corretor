@@ -51,15 +51,6 @@ export const metadata: Metadata = buildMetadata({
   },
   description:
     'Corretor de imóveis em Corumbá-MS e Ladário-MS. Casas, apartamentos, terrenos, pontos comerciais e áreas rurais para comprar ou alugar, com atendimento direto pelo WhatsApp.',
-  keywords: [
-    'corretor de imóveis Corumbá',
-    'corretor de imóveis Ladário',
-    'imóveis Corumbá MS',
-    'imobiliária Corumbá MS',
-    'casas à venda Corumbá',
-    'terrenos Corumbá MS',
-    'aluguel Corumbá MS',
-  ],
   alternates: {
     canonical: '/',
   },

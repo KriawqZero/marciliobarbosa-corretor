@@ -52,6 +52,46 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
+      {
+        // Cabeçalhos de segurança na origem. Não são fator de ranqueamento,
+        // mas aparecem em toda auditoria e são baratos.
+        source: '/:path*',
+        headers: [
+          {
+            // Obriga HTTPS por dois anos, inclusive nos subdomínios. Só é
+            // seguro porque o site inteiro (e `media.`) já roda em HTTPS.
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          // Impede o navegador de "adivinhar" o tipo do arquivo: um upload
+          // com extensão trocada deixa de poder ser executado como script.
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Bloqueia o site dentro de iframe de terceiros (clickjacking).
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          // Envia a URL completa como referenciador só dentro do próprio site;
+          // para fora, apenas o domínio.
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // O site não usa câmera, microfone nem localização. Declarar isso
+          // impede que um script de terceiro peça.
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+      {
+        // Imagens fixas do `public/`: a foto do corretor é a imagem de
+        // compartilhamento (WhatsApp, Facebook) e vinha com `max-age=0`, então
+        // era rebaixada a cada prévia de link. O nome do arquivo nunca muda,
+        // então cache longo é seguro — se a foto for trocada, troca-se o nome.
+        source: '/:file(marcilio\\.jpg|a\\.jpg|placeholder-imovel\\.svg)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=2592000, stale-while-revalidate=86400',
+          },
+        ],
+      },
     ]
   },
 }

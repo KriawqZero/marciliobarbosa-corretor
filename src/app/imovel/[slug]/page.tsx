@@ -22,6 +22,30 @@ import { SITE_NAME, PROPERTY_TYPE_LABEL } from '@/lib/constants'
 import { buildMetadata, getAbsoluteUrl } from '@/lib/metadata'
 import { JsonLd } from '@/components/shared/json-ld'
 import { buildGraph, buildPropertyJsonLd } from '@/lib/jsonld'
+import { buildPropertyWhatsAppMessage } from '@/lib/whatsapp'
+
+/// Ficha servida do cache, revalidada a cada 10 minutos.
+///
+/// Estas páginas vinham com `cache-control: private, no-cache, no-store` — cada
+/// visita, inclusive a do robô, abria consulta ao banco e renderizava tudo de
+/// novo. Um anúncio muda pouco depois de publicado, e o servidor fica em Miami:
+/// o tempo de resposta pesa mais para quem acessa do interior de MS.
+export const revalidate = 600
+
+/// A lista vazia não é descuido: é o que liga o ISR sem custo no build.
+///
+/// `revalidate` sozinho não basta — foi medido: uma rota com parâmetro dinâmico
+/// e sem `generateStaticParams` continua sendo renderizada por requisição, com
+/// `no-store`. Declarar a função opta a rota pelo pipeline estático; devolver
+/// nada faz o build não pré-renderizar ficha nenhuma, então continua rodando
+/// sem `DATABASE_URL`. Com `dynamicParams` no padrão, cada ficha é gerada na
+/// primeira visita e servida do cache nas seguintes.
+///
+/// Cadastro e edição chamam `revalidatePath`, então a janela de 10 minutos só
+/// cobre alteração feita direto no banco.
+export function generateStaticParams() {
+  return []
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -289,7 +313,13 @@ export default async function ImovelPage({ params }: PageProps) {
             </div>
           </div>
 
-          <PropertyContactBox whatsappMessage={property.whatsappMessage} />
+          <PropertyContactBox
+            whatsappMessage={buildPropertyWhatsAppMessage({
+              title: property.title,
+              url,
+              storedMessage: property.whatsappMessage,
+            })}
+          />
         </div>
 
         <RelatedProperties property={property} />

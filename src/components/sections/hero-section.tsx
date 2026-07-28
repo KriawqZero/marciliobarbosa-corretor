@@ -3,6 +3,27 @@ import { Container } from '@/components/layout/container'
 import { HeroSearch } from '@/components/search/hero-search'
 import { HeroVideoBackground } from '@/components/sections/hero-video-background'
 import type { CatalogCounts } from '@/data/services/properties'
+import { BROKER_CRECI, BROKER_FOUNDING_YEAR } from '@/lib/constants'
+
+function CheckIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0 text-dourado"
+      aria-hidden="true"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  )
+}
 
 /// Atalhos do hero. Substituem a grade de 6 cards de categoria que ocupava ~640px
 /// no celular. A contagem vem do banco: a home não promete o que não existe.
@@ -46,6 +67,27 @@ export function HeroSection({ counts }: { counts: CatalogCounts }) {
             <p className="mt-4 max-w-lg text-lg leading-relaxed text-white/75">
               {subtitle}
             </p>
+
+            {/* Credibilidade acima da dobra.
+                O registro no CRECI e os anos de atuação existiam só no rodapé e
+                dentro do JSON-LD — o buscador enxergava, o visitante não. Numa
+                busca por "corretor de imóveis em Corumbá", que é onde este site
+                compete de igual para igual com os portais, esse é justamente o
+                argumento que decide. */}
+            <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/70">
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                Corretor registrado — {BROKER_CRECI}
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                Atuando desde {BROKER_FOUNDING_YEAR}
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                Atendimento direto, sem cadastro
+              </li>
+            </ul>
 
             <ul className="mt-7 flex flex-wrap gap-2">
               {SHORTCUTS.map((shortcut) => {
