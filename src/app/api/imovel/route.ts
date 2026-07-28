@@ -10,6 +10,11 @@ import {
 import { PrismaPg } from "@prisma/adapter-pg";
 import { moveObject, generateFinalPath, generateTempPath } from "@/lib/storage";
 import { revalidatePropertyRoutes } from "@/lib/revalidate";
+import {
+  cleanNeighborhoodName,
+  isRealNeighborhood,
+  matchExistingNeighborhood,
+} from "@/lib/format";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: env.DATABASE_URL }),
@@ -128,39 +133,36 @@ async function generateUniqueSlug(baseSlug: string): Promise<string> {
 
 const DEFAULT_NEIGHBORHOOD = 'A definir'
 
-/// Reaproveita a grafia de um bairro já cadastrado.
+/// Reaproveita a grafia de um bairro ja cadastrado.
 ///
-/// Sem isto, "centro", "Centro" e "CENTRO" viram três bairros distintos para o
-/// site: o resumo das páginas de categoria lista os três, e a busca por bairro
-/// encontra só um terço dos imóveis. A comparação ignora acento e caixa, mas o
-/// que fica gravado é sempre a grafia que já estava no banco — assim a primeira
-/// vez que o bairro é digitado define a forma correta, e as próximas só
-/// seguem.
+/// O mesmo bairro chega escrito de varias formas: "Centro", "centro", "Centro
+/// Corumba", "Centro de Corumba", "Aeroporto", "Bairro Aeroporto". Para o site
+/// eram bairros diferentes: a pagina de categoria listava todos na mesma frase
+/// e a busca por bairro encontrava so uma fracao dos imoveis.
+///
+/// A comparacao fica em `matchExistingNeighborhood`, junto das funcoes que o
+/// site usa para exibir — assim o que e gravado e o que aparece na pagina nunca
+/// divergem. Bairro realmente novo e gravado com o nome limpo do input.
 async function canonicalNeighborhood(
   input: string,
   citySlug?: string,
 ): Promise<string> {
   const trimmed = input.trim().replace(/\s+/g, ' ')
   if (!trimmed) return DEFAULT_NEIGHBORHOOD
-
-  const key = (value: string) =>
-    value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim()
+  if (!isRealNeighborhood(trimmed)) return DEFAULT_NEIGHBORHOOD
 
   const existing = await prisma.property.findMany({
     where: citySlug ? { citySlug } : undefined,
     select: { neighborhood: true },
     distinct: ['neighborhood'],
-  });
+  })
 
-  const match = existing.find(
-    (row) => row.neighborhood && key(row.neighborhood) === key(trimmed),
-  );
+  const match = matchExistingNeighborhood(
+    trimmed,
+    existing.map((row) => row.neighborhood).filter(Boolean),
+  )
 
-  return match?.neighborhood ?? trimmed
+  return match ?? cleanNeighborhoodName(trimmed)
 }
 
 const DEFAULT_TOTAL_AREA = 1

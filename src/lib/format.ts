@@ -14,6 +14,126 @@ export function isRealNeighborhood(
   return normalized.length > 0 && normalized !== 'a definir'
 }
 
+// ---------------------------------------------------------------------------
+// Bairros
+//
+// O mesmo bairro chega escrito de várias formas no cadastro: "Centro",
+// "Centro Corumbá", "Centro de Corumbá", "Aeroporto", "Bairro Aeroporto",
+// "Guatós, Corumbá/MS". Para o site eram bairros diferentes, e a página de
+// categoria listava todos eles na mesma frase.
+//
+// A limpeza é deliberadamente conservadora. "Nova Corumbá" é um bairro real:
+// cortar a cidade grudada no fim toda vez transformaria esse nome em "Nova".
+// Por isso a cidade só é removida quando vem separada por vírgula, hífen, barra
+// ou pelas palavras "de"/"em" — casos em que é claramente complemento de
+// endereço, e não parte do nome.
+//
+// O caso ambíguo ("Centro Corumbá", cidade colada por um espaço só) é resolvido
+// por comparação, não por regra: o corte só vale se o que sobra já existir como
+// bairro no acervo. "Centro" existe, então junta; "Nova" não existe, então
+// "Nova Corumbá" fica como está.
+// ---------------------------------------------------------------------------
+
+/// Cidade precedida de separador ou de "de"/"em" — complemento de endereço.
+const CITY_AFTER_SEPARATOR =
+  /(?:[,\-–—/]+\s*|\s+(?:de|em)\s+)(?:corumbá|corumba|ladário|ladario)(?:\s*[-/,]?\s*ms)?$/i
+/// Cidade colada por um espaço só. Ambígua: tratada na etapa de comparação.
+const CITY_AFTER_SPACE = /\s+(?:corumba|ladario)$/
+const NEIGHBORHOOD_PREFIX = /^(?:bairro|b\.|bº)\s+/i
+
+/// Nome do bairro sem o ruído, preservando acento e caixa. É o que aparece no
+/// site. Se a limpeza esvaziar o texto — nome que era só a cidade — devolve o
+/// original: melhor um nome estranho que nenhum.
+export function cleanNeighborhoodName(name: string): string {
+  const cleaned = name
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(NEIGHBORHOOD_PREFIX, '')
+    .replace(CITY_AFTER_SEPARATOR, '')
+    .replace(/[\s,\-–—/]+ms$/i, '')
+    .trim()
+
+  return cleaned.length > 0 ? cleaned : name.trim()
+}
+
+/// Forma comparável: sem acento, sem caixa, sem espaço repetido.
+export function neighborhoodKey(name: string): string {
+  return cleanNeighborhoodName(name)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+/// Entre grafias do mesmo bairro, escolhe a que aparece no site.
+///
+/// Prefere a mais curta — "Centro" no lugar de "Centro Corumbá". Empate de
+/// tamanho é decidido pela que tem mais palavras com inicial maiúscula, que é o
+/// que separa "Popular Nova" de "Popular nova". O critério alfabético no fim só
+/// existe para o resultado nunca depender da ordem de cadastro.
+export function pickNeighborhoodSpelling(names: string[]): string {
+  const capitalizedWords = (name: string) =>
+    name.split(/\s+/).filter((word) => /^\p{Lu}/u.test(word)).length
+
+  return [...names].sort((a, b) => {
+    if (a.length !== b.length) return a.length - b.length
+    const score = capitalizedWords(b) - capitalizedWords(a)
+    if (score !== 0) return score
+    return a.localeCompare(b, 'pt-BR')
+  })[0]
+}
+
+/// Junta as grafias equivalentes e devolve a lista limpa, em ordem alfabética.
+export function dedupeNeighborhoods(names: string[]): string[] {
+  const groups = new Map<string, string[]>()
+
+  for (const name of names) {
+    if (!isRealNeighborhood(name)) continue
+    const clean = cleanNeighborhoodName(name)
+    const key = neighborhoodKey(clean)
+    if (!key) continue
+    groups.set(key, [...(groups.get(key) ?? []), clean])
+  }
+
+  /// Segunda passada, para o caso ambíguo: "centro corumba" só é absorvido por
+  /// "centro" porque "centro" está na lista.
+  for (const [key, grouped] of [...groups]) {
+    const base = key.replace(CITY_AFTER_SPACE, '')
+    if (base === key || !groups.has(base)) continue
+    groups.set(base, [...groups.get(base)!, ...grouped])
+    groups.delete(key)
+  }
+
+  return Array.from(groups.values())
+    .map(pickNeighborhoodSpelling)
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+}
+
+/// Grafia a adotar para um bairro recém-digitado, dadas as que já existem.
+/// Devolve `null` quando é bairro novo — aí vale o nome limpo do próprio input.
+export function matchExistingNeighborhood(
+  input: string,
+  existing: string[],
+): string | null {
+  const target = neighborhoodKey(input)
+  if (!target) return null
+
+  const escolher = (chave: string) => {
+    const equivalentes = existing.filter(
+      (name) => isRealNeighborhood(name) && neighborhoodKey(name) === chave,
+    )
+    return equivalentes.length > 0
+      ? pickNeighborhoodSpelling(equivalentes.map(cleanNeighborhoodName))
+      : null
+  }
+
+  const exato = escolher(target)
+  if (exato) return exato
+
+  const base = target.replace(CITY_AFTER_SPACE, '')
+  return base === target ? null : escolher(base)
+}
+
 export function formatPrice(value: number): string {
   return value.toLocaleString('pt-BR', {
     style: 'currency',
