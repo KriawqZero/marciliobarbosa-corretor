@@ -60,9 +60,20 @@ mas o perfil precisa existir.
 
 ## 3. IndexNow (Bing, DuckDuckGo, Yandex, Yep)
 
-Já implementado. Funcionamento:
+É um protocolo aberto: em vez de esperar o robô do buscador passar pelo site
+(o que pode levar dias ou semanas), o site avisa que uma página mudou. Um único
+envio notifica Bing, DuckDuckGo, Yandex, Seznam, Naver e Yep de uma vez.
 
-- A chave é servida em `/indexnow-key.txt`.
+A chave (`INDEXNOW_KEY`) funciona como senha: o site publica a chave num
+arquivo de texto, e o buscador baixa esse arquivo para conferir que quem
+notificou realmente controla o domínio. Ela precisa ter de 8 a 128 caracteres
+entre `a-z`, `A-Z`, `0-9` e hífen.
+
+Funcionamento neste site:
+
+- A chave é servida em dois lugares: `/indexnow-key.txt` (caminho fixo, enviado
+  no campo `keyLocation` de cada notificação) e `/{chave}.txt` na raiz, que é a
+  forma recomendada pela especificação.
 - Toda vez que um imóvel é criado, editado ou removido pela API
   (`/api/imovel`), o site notifica o IndexNow com as URLs afetadas.
 - Para reenviar o site inteiro (primeira publicação, troca de domínio, ou
@@ -73,8 +84,16 @@ curl -X POST https://marciliobarbosacorretor.com.br/api/indexnow \
   -H "Authorization: Bearer $API_PASSWORD"
 ```
 
-A resposta traz `status`. `200` ou `202` significa aceito; `403` é chave
-inválida; `422` é host que não bate com a chave.
+A resposta traz `status`:
+
+| Código | Significado |
+|---|---|
+| 200 | URLs recebidas |
+| 202 | Recebidas, validação da chave pendente |
+| 400 | Formato inválido |
+| 403 | Chave inválida (arquivo não encontrado, ou chave não confere) |
+| 422 | URLs não pertencem ao domínio, ou chave fora do formato |
+| 429 | Envios demais — esperar |
 
 O Google **não** participa do IndexNow. Lá a atualização continua vindo do
 sitemap e do Search Console.
@@ -87,17 +106,23 @@ Estas ficam em `src/lib/constants.ts`. Cada campo vazio é simplesmente omitido
 do JSON-LD — schema com campo inventado é pior que schema incompleto, porque o
 buscador trata como dado errado.
 
-| Constante | O que é | Por que importa |
-|---|---|---|
-| `BROKER_STREET_ADDRESS` | Endereço do escritório/atendimento | Sem endereço, o Google não consegue tratar o negócio como local e não mostra no mapa |
-| `BROKER_POSTAL_CODE` | CEP desse endereço | Idem |
-| `BROKER_LATITUDE` / `BROKER_LONGITUDE` | Coordenadas do escritório | Melhora buscas do tipo "corretor perto de mim" |
-| `BROKER_SOCIAL_PROFILES` | Instagram, Facebook, YouTube, perfil do Google | É por `sameAs` que o buscador confirma que site e perfis são a mesma pessoa — um dos sinais mais fortes de identidade |
-| `BROKER_OPENING_HOURS` | Horário de atendimento | Aparece direto no resultado ("Aberto agora") |
-| `BROKER_FOUNDING_YEAR` | Ano em que começou a atuar | Sinal de tempo de atuação |
+| Constante | Situação |
+|---|---|
+| `BROKER_POSTAL_CODE` | ✅ `79304-070` |
+| `BROKER_LATITUDE` / `BROKER_LONGITUDE` | ✅ `-19.0249553` / `-57.6424487` |
+| `BROKER_SOCIAL_PROFILES` | ✅ Facebook e Instagram |
+| `BROKER_OPENING_HOURS` | ✅ Segunda a sexta, 07:00–17:00 — **confirmar se atende sábado** |
+| `BROKER_FOUNDING_YEAR` | ✅ `2016` |
+| `BROKER_STREET_ADDRESS` | ⬜ **Falta:** logradouro e número |
 
-Se o atendimento não tem endereço fixo, deixe `BROKER_STREET_ADDRESS` vazio —
-é melhor que um endereço aproximado.
+**Sobre o logradouro:** as coordenadas caem na Rua Marechal Antônio Maria
+Coelho, bairro Cristo Redentor, em Corumbá. Falta o número. Enquanto estiver em
+branco, o site declara cidade, estado e CEP — o que já situa o negócio na
+região — e omite a rua, porque meio endereço faz o buscador tentar casar com um
+ponto no mapa e errar.
+
+Vale conferir o CEP: `79304-070` e o bairro Cristo Redentor não parecem bater
+(a base pública de endereços aponta `79311-030` para aquele trecho da rua).
 
 ### Falta também no conteúdo
 
@@ -131,6 +156,17 @@ Se o atendimento não tem endereço fixo, deixe `BROKER_STREET_ADDRESS` vazio �
 - `feed.xml` (RSS) dos imóveis recentes, declarado no `<head>`
 - IndexNow automático a cada mudança de imóvel
 - `manifest.webmanifest`
+
+**Status HTTP correto (soft 404)**
+- Imóvel removido ou URL digitada errada responde **404 de verdade**, não 200.
+  Antes o site mostrava a tela "Página não encontrada" mas afirmava 200 OK, e o
+  buscador indexava cada URL errada como página válida. A causa eram os
+  arquivos `loading.tsx` dessas rotas: ao enviar o esqueleto imediatamente, o
+  status ficava travado em 200 antes de o código descobrir que o imóvel não
+  existia.
+- Categoria inexistente é barrada em `src/middleware.ts`, que roda antes do
+  envio da resposta. A página de categoria lê filtros da URL, então é sempre
+  dinâmica e não conseguiria corrigir o status por conta própria.
 
 **Controle de indexação**
 - `max-image-preview:large` em todo o site — é o que faz o Google exibir a foto

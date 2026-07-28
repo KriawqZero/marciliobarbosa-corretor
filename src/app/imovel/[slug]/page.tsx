@@ -77,14 +77,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
   const property = await getPropertyBySlug(slug).catch(() => null)
 
-  /// Slug inexistente vira 404 na página; aqui só evitamos que o buscador
-  /// guarde o título genérico do layout para uma URL que não existe.
-  if (!property) {
-    return buildMetadata({
-      title: 'Imóvel não encontrado',
-      robots: { index: false, follow: true },
-    })
-  }
+  /// `notFound()` aqui, e não só no componente da página.
+  ///
+  /// A página renderiza em streaming: quando `notFound()` era chamado lá
+  /// dentro, o cabeçalho HTTP já tinha sido enviado com status 200 e o Next não
+  /// tinha mais como corrigi-lo. O resultado era um "soft 404" — a tela dizia
+  /// "Página não encontrada" mas a resposta afirmava 200 OK, e o buscador
+  /// indexava cada URL errada ou removida como página válida.
+  ///
+  /// A geração de metadados acontece antes do primeiro envio, então interromper
+  /// daqui produz o 404 de verdade.
+  if (!property) notFound()
 
   const price = formatPrice(property.price)
   const typeLabel = PROPERTY_TYPE_LABEL[property.type] ?? 'Imóvel'

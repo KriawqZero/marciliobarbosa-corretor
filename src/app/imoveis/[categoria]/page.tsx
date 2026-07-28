@@ -9,7 +9,7 @@ import { SortSelect } from '@/components/search/sort-select'
 import { PropertyGridSkeleton } from '@/components/shared/loading-skeleton'
 import { JsonLd } from '@/components/shared/json-ld'
 import { getPropertiesPaged } from '@/data/services/properties'
-import { CATEGORIES, VALID_CATEGORIES, SITE_NAME } from '@/lib/constants'
+import { CATEGORIES, SITE_NAME } from '@/lib/constants'
 import {
   buildListingCanonical,
   hasListingFilters,
@@ -36,25 +36,18 @@ interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-/// Deixa o Next conhecer as categorias válidas em tempo de build. Ganha duas
-/// coisas: a categoria inexistente vira 404 sem consultar o banco, e as páginas
-/// reais começam a responder mais rápido — velocidade de resposta é sinal de
-/// qualidade para o buscador e para o visitante no celular.
-export function generateStaticParams() {
-  return VALID_CATEGORIES.map((categoria) => ({ categoria }))
-}
+/// Categoria inexistente é barrada em `src/middleware.ts`, antes de a resposta
+/// começar a ser enviada — é lá que ainda dá para devolver 404 de verdade.
+/// Esta rota lê `searchParams`, então é sempre dinâmica: `generateStaticParams`
+/// e `dynamicParams` não teriam efeito aqui.
 
 export async function generateMetadata({
   params,
   searchParams,
 }: PageProps): Promise<Metadata> {
   const { categoria } = await params
-  if (!isValidCategory(categoria)) {
-    return buildMetadata({
-      title: 'Categoria não encontrada',
-      robots: { index: false, follow: true },
-    })
-  }
+  /// Rede de segurança: o middleware já barrou o que chegaria aqui inválido.
+  if (!isValidCategory(categoria)) notFound()
 
   const cat = CATEGORIES[categoria]
   const search = await searchParams
